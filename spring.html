@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spring & Oscillation — Physics Simulation Hub</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f6f3; --surface: #fff; --border: #e5e3de;
+  --text: #1c1a17; --muted: #8a8680;
+  --accent: #16a34a; --radius: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+body { font-family: system-ui, sans-serif; font-size: 14px; background: var(--bg); color: var(--text); line-height: 1.5; }
+.page { max-width: 900px; margin: 0 auto; padding: 36px 24px; }
+.back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color 0.15s; }
+.back-link:hover { color: var(--accent); }
+header { margin-bottom: 24px; }
+h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+main { display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; }
+.card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.fields { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: 500; color: var(--muted); }
+.input-row { display: flex; }
+.input-row input { border-radius: var(--radius) 0 0 var(--radius); border-right: none; }
+.input-row .unit-badge { border-radius: 0 var(--radius) var(--radius) 0; }
+input[type="number"] { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 90px; transition: border-color 0.12s, box-shadow 0.12s; }
+input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+.unit-badge { display: flex; align-items: center; padding: 7px 9px; border: 1px solid #d1d1d6; border-left: none; border-radius: 0 var(--radius) var(--radius) 0; background: var(--bg); color: var(--muted); font-size: 11px; white-space: nowrap; }
+button { font-family: inherit; font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; transition: all 0.12s; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #15803d; }
+.btn-secondary { background: var(--surface); color: var(--muted); border-color: #d1d1d6; }
+.btn-secondary:hover { background: var(--bg); color: var(--text); }
+button:active { transform: scale(0.98); }
+.actions { flex-direction: row; gap: 8px; align-items: center; }
+canvas { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 4px; background: #fafafa; }
+.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.result-item { background: var(--bg); border-radius: var(--radius); padding: 12px 14px; }
+.result-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 4px; }
+.result-val { font-size: 18px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.result-unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
+select { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 170px; }
+select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="back-link">← Hub</a>
+  <header>
+    <h1>Spring &amp; Oscillation</h1>
+    <p class="subtitle">Simple Harmonic Motion · Hooke's Law · Damping</p>
+  </header>
+  <main>
+    <section class="card">
+      <div class="card-title">Parameters</div>
+      <div class="fields">
+        <div class="field">
+          <label for="spring-k">Spring Constant (k)</label>
+          <div class="input-row">
+            <input type="number" id="spring-k" value="10" min="0.1" step="0.5">
+            <span class="unit-badge">N/m</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="spring-m">Mass</label>
+          <div class="input-row">
+            <input type="number" id="spring-m" value="1" min="0.01" step="0.1">
+            <span class="unit-badge">kg</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="spring-amp">Amplitude</label>
+          <div class="input-row">
+            <input type="number" id="spring-amp" value="0.5" min="0.01" step="0.05">
+            <span class="unit-badge">m</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="spring-damp">Damping (b)</label>
+          <div class="input-row">
+            <input type="number" id="spring-damp" value="0.2" min="0" step="0.05">
+            <span class="unit-badge">N·s/m</span>
+          </div>
+        </div>
+        <div class="field actions">
+          <button class="btn-primary" id="spring-run">Simulate</button>
+          <button class="btn-secondary" id="spring-stop">Stop</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">Animation</div>
+      <canvas id="spring-canvas" width="860" height="220"></canvas>
+    </section>
+
+    <section class="card">
+      <div class="card-title">Displacement over Time</div>
+      <canvas id="spring-plot" width="860" height="200"></canvas>
+    </section>
+
+    <section class="card">
+      <div class="card-title">Computed Values</div>
+      <div class="results-grid">
+        <div class="result-item">
+          <div class="result-label">Period</div>
+          <div class="result-val" id="res-period">—<span class="result-unit">s</span></div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Frequency</div>
+          <div class="result-val" id="res-freq">—<span class="result-unit">Hz</span></div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Angular Freq (ω)</div>
+          <div class="result-val" id="res-omega">—<span class="result-unit">rad/s</span></div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Max Velocity</div>
+          <div class="result-val" id="res-vmax">—<span class="result-unit">m/s</span></div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Max Force</div>
+          <div class="result-val" id="res-fmax">—<span class="result-unit">N</span></div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Damping Ratio</div>
+          <div class="result-val" id="res-zeta">—</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+const canvas = document.getElementById("spring-canvas");
+const ctx    = canvas.getContext("2d");
+const plotC  = document.getElementById("spring-plot");
+const plotCtx = plotC.getContext("2d");
+
+let raf = null;
+let t   = 0;
+const history = [];
+const maxHistory = 430;
+
+function getParams() {
+  return {
+    k:   parseFloat(document.getElementById("spring-k").value)    || 10,
+    m:   parseFloat(document.getElementById("spring-m").value)    || 1,
+    A:   parseFloat(document.getElementById("spring-amp").value)  || 0.5,
+    b:   parseFloat(document.getElementById("spring-damp").value) || 0,
+  };
+}
+
+function computeValues(k, m, A, b) {
+  const omega0 = Math.sqrt(k / m);
+  const zeta   = b / (2 * Math.sqrt(k * m));
+  const omegaD = omega0 * Math.sqrt(Math.max(0, 1 - zeta * zeta));
+  const T      = omegaD > 0 ? (2 * Math.PI / omegaD) : Infinity;
+  const f      = T < Infinity ? 1 / T : 0;
+  const vmax   = A * omegaD;
+  const fmax   = k * A;
+  return { omega0, zeta, omegaD, T, f, vmax, fmax };
+}
+
+function updateResults() {
+  const { k, m, A, b } = getParams();
+  const { omega0, zeta, omegaD, T, f, vmax, fmax } = computeValues(k, m, A, b);
+  document.getElementById("res-period").innerHTML  = (T < 1e6 ? T.toFixed(3) : "∞") + '<span class="result-unit">s</span>';
+  document.getElementById("res-freq").innerHTML    = f.toFixed(3) + '<span class="result-unit">Hz</span>';
+  document.getElementById("res-omega").innerHTML   = omega0.toFixed(3) + '<span class="result-unit">rad/s</span>';
+  document.getElementById("res-vmax").innerHTML    = vmax.toFixed(3) + '<span class="result-unit">m/s</span>';
+  document.getElementById("res-fmax").innerHTML    = fmax.toFixed(2) + '<span class="result-unit">N</span>';
+  document.getElementById("res-zeta").innerHTML    = zeta.toFixed(3) + (zeta < 1 ? ' <small style="color:#16a34a">underdamped</small>' : zeta === 1 ? ' <small>critical</small>' : ' <small style="color:#ea580c">overdamped</small>');
+}
+
+function displacement(t, A, b, m, omegaD, zeta, omega0) {
+  if (zeta < 1) {
+    return A * Math.exp(-zeta * omega0 * t) * Math.cos(omegaD * t);
+  } else {
+    return A * Math.exp(-zeta * omega0 * t);
+  }
+}
+
+function drawAnimation(x, A) {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#fafafa";
+  ctx.fillRect(0, 0, W, H);
+
+  const cx   = W * 0.38;
+  const cy   = H / 2;
+  const eq   = cx;                            // equilibrium x
+  const maxDisp = W * 0.22;
+  const px   = eq + (x / (A || 1)) * maxDisp; // mass x position
+  const massR = 22;
+
+  // Ceiling
+  ctx.fillStyle = "#d1d1d6";
+  ctx.fillRect(0, 12, W, 6);
+
+  // Spring (zigzag)
+  const springTop = 18;
+  const springBot = cy - massR;
+  const coils     = 12;
+  const coilH     = (springBot - springTop) / coils;
+  const coilW     = 18;
+  ctx.beginPath();
+  ctx.moveTo(cx, springTop);
+  for (let i = 0; i < coils; i++) {
+    const yA = springTop + i * coilH + coilH * 0.25;
+    const yB = springTop + i * coilH + coilH * 0.75;
+    ctx.lineTo(cx + (i % 2 === 0 ? coilW : -coilW), yA);
+    ctx.lineTo(cx + (i % 2 === 0 ? -coilW : coilW), yB);
+  }
+  ctx.lineTo(cx, springBot);
+  ctx.strokeStyle = "#6b7280";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Equilibrium dashed line
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = "#d1d1d6";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(20, cy);
+  ctx.lineTo(W - 20, cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Displacement line
+  ctx.strokeStyle = "#16a34a";
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(eq, cy);
+  ctx.lineTo(px, cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Mass
+  const grad = ctx.createRadialGradient(px - 6, cy - 6, 2, px, cy, massR);
+  grad.addColorStop(0, "#4ade80");
+  grad.addColorStop(1, "#15803d");
+  ctx.beginPath();
+  ctx.arc(px, cy, massR, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = "#166534";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Displacement label
+  ctx.font = "11px system-ui";
+  ctx.fillStyle = "#16a34a";
+  ctx.textAlign = "center";
+  ctx.fillText(`x = ${x.toFixed(3)} m`, px, cy + massR + 16);
+  ctx.textAlign = "left";
+
+  // Equilibrium label
+  ctx.fillStyle = "#aaa";
+  ctx.font = "10px system-ui";
+  ctx.fillText("equilibrium", eq + 4, cy - 6);
+}
+
+function drawPlot() {
+  const W = plotC.width, H = plotC.height;
+  const padL = 42, padR = 16, padT = 12, padB = 28;
+  const iW = W - padL - padR, iH = H - padT - padB;
+
+  plotCtx.clearRect(0, 0, W, H);
+  plotCtx.fillStyle = "#fafafa";
+  plotCtx.fillRect(0, 0, W, H);
+
+  if (history.length < 2) return;
+  const { A } = getParams();
+  const maxY = A || 1;
+
+  // Grid
+  plotCtx.strokeStyle = "#ebebeb";
+  plotCtx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (i / 4) * iH;
+    plotCtx.beginPath(); plotCtx.moveTo(padL, y); plotCtx.lineTo(W - padR, y); plotCtx.stroke();
+  }
+
+  // Zero line
+  plotCtx.strokeStyle = "#c8c8c8";
+  const zy = padT + iH / 2;
+  plotCtx.beginPath(); plotCtx.moveTo(padL, zy); plotCtx.lineTo(W - padR, zy); plotCtx.stroke();
+
+  // Labels
+  plotCtx.font = "9px system-ui";
+  plotCtx.fillStyle = "#aaa";
+  plotCtx.textAlign = "right";
+  plotCtx.fillText(`+${maxY.toFixed(2)}`, padL - 3, padT + 4);
+  plotCtx.fillText("0", padL - 3, zy + 4);
+  plotCtx.fillText(`-${maxY.toFixed(2)}`, padL - 3, H - padB + 4);
+
+  // Curve
+  const step = iW / (maxHistory - 1);
+  plotCtx.beginPath();
+  history.forEach((val, i) => {
+    const x = padL + i * step;
+    const y = padT + iH / 2 - (val / (maxY || 1)) * (iH / 2);
+    i === 0 ? plotCtx.moveTo(x, y) : plotCtx.lineTo(x, y);
+  });
+  plotCtx.strokeStyle = "#16a34a";
+  plotCtx.lineWidth = 1.8;
+  plotCtx.lineJoin = "round";
+  plotCtx.stroke();
+}
+
+let running = false;
+
+function startSim() {
+  if (running) { cancelAnimationFrame(raf); running = false; }
+  t = 0;
+  history.length = 0;
+  running = true;
+  updateResults();
+
+  const { k, m, A, b } = getParams();
+  const { omega0, zeta, omegaD } = computeValues(k, m, A, b);
+  const dt = 1 / 60;
+
+  function step() {
+    if (!running) return;
+    t += dt;
+    const x = displacement(t, A, b, m, omegaD, zeta, omega0);
+    history.push(x);
+    if (history.length > maxHistory) history.shift();
+    drawAnimation(x, A);
+    drawPlot();
+    raf = requestAnimationFrame(step);
+  }
+  raf = requestAnimationFrame(step);
+}
+
+document.getElementById("spring-run").addEventListener("click", startSim);
+document.getElementById("spring-stop").addEventListener("click", () => {
+  running = false;
+  cancelAnimationFrame(raf);
+});
+
+updateResults();
+drawAnimation(getParams().A, getParams().A);
+</script>
+</body>
+</html>

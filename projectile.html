@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Projectile Motion — Physics Simulation Hub</title>
+<link rel="stylesheet" href="projectile.css">
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="back-link">← Hub</a>
+  <header>
+    <div class="header-left">
+      <h1>Physics Simulation</h1>
+      <p class="subtitle">2D Projectile Motion · Real Atmospheric Conditions</p>
+    </div>
+    <div class="weather-panel" id="weather-panel">
+      <div class="weather-loading" id="weather-loading">
+        <span class="spinner"></span> Fetching weather…
+      </div>
+      <div class="weather-data hidden" id="weather-data">
+        <div class="weather-header">
+          <span class="weather-loc" id="weather-loc">—</span>
+          <label class="toggle-label">
+            <input type="checkbox" id="weather-toggle" checked>
+            <span class="toggle-track"></span>
+            Apply weather
+          </label>
+        </div>
+        <div class="weather-grid">
+          <div class="wx-stat">
+            <span class="wx-label">Wind</span>
+            <span class="wx-val" id="wind-speed-display">—</span>
+          </div>
+          <div class="wx-stat">
+            <span class="wx-label">Direction</span>
+            <span class="wx-val" id="wind-dir-display">—</span>
+          </div>
+          <div class="wx-stat">
+            <span class="wx-label">Temp</span>
+            <span class="wx-val" id="temp-display">—</span>
+          </div>
+          <div class="wx-stat">
+            <span class="wx-label">Humidity</span>
+            <span class="wx-val" id="humidity-display">—</span>
+          </div>
+          <div class="wx-stat">
+            <span class="wx-label">Pressure</span>
+            <span class="wx-val" id="pressure-display">—</span>
+          </div>
+          <div class="wx-stat">
+            <span class="wx-label">Air Density</span>
+            <span class="wx-val" id="density-display">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="weather-error hidden" id="weather-error">
+        <span>⚠ Weather unavailable</span>
+        <button class="retry-btn" id="btn-retry">Retry</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="card-title">Launch Parameters</div>
+      <div class="fields">
+        <div class="field">
+          <label for="velocity">Initial Velocity</label>
+          <div class="input-row">
+            <input type="number" id="velocity" value="50" min="1">
+            <select id="vel-unit">
+              <option value="ms">m/s</option>
+              <option value="kmh">km/h</option>
+              <option value="mph">mph</option>
+              <option value="fts">ft/s</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="angle">Launch Angle</label>
+          <div class="input-row">
+            <input type="number" id="angle" value="45" min="1" max="89">
+            <span class="unit-badge">deg</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="cd">Drag Coeff (Cd)</label>
+          <div class="input-row">
+            <input type="number" id="cd" value="0.47" min="0" max="2" step="0.01">
+            <span class="unit-badge">—</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="mass">Mass</label>
+          <div class="input-row">
+            <input type="number" id="mass" value="1" min="0.01" step="0.1">
+            <span class="unit-badge">kg</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="area">Cross-section</label>
+          <div class="input-row">
+            <input type="number" id="area" value="0.01" min="0.001" step="0.001">
+            <span class="unit-badge">m²</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="gravity">Environment</label>
+          <select id="gravity" class="full-width">
+            <option value="9.81">Earth — 9.81 m/s²</option>
+            <option value="1.62">Moon — 1.62 m/s²</option>
+            <option value="3.72">Mars — 3.72 m/s²</option>
+            <option value="24.79">Jupiter — 24.79 m/s²</option>
+          </select>
+        </div>
+        <div class="field actions">
+          <button id="btn-launch">Launch</button>
+          <button id="btn-clear" class="secondary">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title-row">
+        <div class="card-title">Trajectory</div>
+        <div class="physics-badges" id="physics-badges"></div>
+      </div>
+      <canvas id="canvas" width="900" height="380"></canvas>
+    </section>
+
+    <section class="card">
+      <div class="card-title">Results</div>
+      <div class="table-wrap">
+        <table class="stats">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Angle</th>
+              <th>Velocity</th>
+              <th>Max Height</th>
+              <th>Range</th>
+              <th>Flight Time</th>
+              <th>Vx</th>
+              <th>Vy</th>
+              <th>Air Density</th>
+              <th>Wind</th>
+            </tr>
+          </thead>
+          <tbody id="stats-body">
+            <tr class="empty-row">
+              <td colspan="10">No launches yet — hit Launch to begin.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="projectile.js"></script>
+</body>
+</html>

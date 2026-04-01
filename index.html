@@ -1,96 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Projectile Simulator</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physics Simulation Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --border: #e5e3de;
+  --text: #1c1a17;
+  --muted: #8a8680;
+  --accent: #2352d6;
+  --radius: 10px;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Layout ── */
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 72px 28px 80px;
+}
+
+/* ── Header ── */
+.hub-header {
+  margin-bottom: 56px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+h1 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hub-desc {
+  font-size: 15px;
+  color: var(--muted);
+  max-width: 440px;
+  line-height: 1.6;
+}
+
+/* ── Grid ── */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* ── Tool Card ── */
+.tool-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 26px 24px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.tool-card:hover {
+  box-shadow: 0 8px 28px rgba(0,0,0,0.09);
+  border-color: #ccc9c3;
+  transform: translateY(-2px);
+}
+
+.tool-card.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* accent stripe at top */
+.tool-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--card-color, var(--accent));
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+
+.tool-card:hover::before { opacity: 1; }
+
+.tool-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--card-bg, #eff3fd);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tool-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.tool-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.tool-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.tool-tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--card-bg, #eff3fd);
+  color: var(--card-color, var(--accent));
+}
+
+.tool-arrow {
+  color: var(--muted);
+  font-size: 16px;
+  transition: transform 0.15s, color 0.15s;
+}
+
+.tool-card:hover .tool-arrow {
+  transform: translateX(3px);
+  color: var(--text);
+}
+
+.coming-soon {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #b0ada8;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #f0eeeb;
+}
+
+/* ── Section label ── */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  margin-top: 40px;
+}
+
+.section-label:first-of-type { margin-top: 0; }
+
+/* ── Footer ── */
+.hub-footer {
+  margin-top: 60px;
+  font-size: 12px;
+  color: #bbb8b3;
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+</style>
 </head>
 <body>
+<div class="page">
 
-  <div class="page">
+  <header class="hub-header">
+    <p class="eyebrow">Interactive Tools</p>
+    <h1>Physics Simulation <em>Hub</em></h1>
+    <p class="hub-desc">A collection of interactive physics calculators. Pick a topic and explore the underlying mechanics with real parameters.</p>
+  </header>
 
-    <header>
-      <h1>Projectile Simulator</h1>
-      <p class="subtitle">2D Physics Calculator</p>
-    </header>
+  <p class="section-label">Available</p>
 
-    <main>
+  <div class="tool-grid">
 
-      <section class="card controls">
-        <div class="card-title">Parameters</div>
+    <a href="projectile.html" class="tool-card"
+       style="--card-color:#2352d6; --card-bg:#eef2fd;">
+      <div class="tool-icon">🎯</div>
+      <div class="tool-name">Projectile Motion</div>
+      <div class="tool-desc">Simulate 2D trajectories with real atmospheric drag, wind, temperature, humidity and pressure from your local weather.</div>
+      <div class="tool-footer">
+        <span class="tool-tag">Mechanics</span>
+        <span class="tool-arrow">→</span>
+      </div>
+    </a>
 
-        <div class="fields">
-          <div class="field">
-            <label for="velocity">Initial Velocity</label>
-            <div class="input-row">
-              <input type="number" id="velocity" value="50" min="1">
-              <select id="vel-unit">
-                <option value="ms">m/s</option>
-                <option value="kmh">km/h</option>
-                <option value="mph">mph</option>
-                <option value="fts">ft/s</option>
-              </select>
-            </div>
-          </div>
+    <a href="spring.html" class="tool-card"
+       style="--card-color:#16a34a; --card-bg:#f0fdf4;">
+      <div class="tool-icon">🌀</div>
+      <div class="tool-name">Spring & Oscillation</div>
+      <div class="tool-desc">Explore Hooke's Law, simple harmonic motion, damping ratios and resonance with an animated mass-spring system.</div>
+      <div class="tool-footer">
+        <span class="tool-tag">Waves</span>
+        <span class="tool-arrow">→</span>
+      </div>
+    </a>
 
-          <div class="field">
-            <label for="angle">Launch Angle</label>
-            <div class="input-row">
-              <input type="number" id="angle" value="45" min="1" max="89">
-              <span class="unit-badge">deg</span>
-            </div>
-          </div>
+    <a href="pulley.html" class="tool-card"
+       style="--card-color:#9333ea; --card-bg:#faf5ff;">
+      <div class="tool-icon">⚙️</div>
+      <div class="tool-name">Pulley System</div>
+      <div class="tool-desc">Calculate mechanical advantage, tension, acceleration and effort force for fixed, movable and compound pulley setups.</div>
+      <div class="tool-footer">
+        <span class="tool-tag">Machines</span>
+        <span class="tool-arrow">→</span>
+      </div>
+    </a>
 
-          <div class="field">
-            <label for="gravity">Environment</label>
-            <select id="gravity" class="full-width">
-              <option value="9.81">Earth — 9.81 m/s²</option>
-              <option value="1.62">Moon — 1.62 m/s²</option>
-              <option value="3.72">Mars — 3.72 m/s²</option>
-              <option value="24.79">Jupiter — 24.79 m/s²</option>
-            </select>
-          </div>
+    <a href="fbd.html" class="tool-card"
+       style="--card-color:#ea580c; --card-bg:#fff7ed;">
+      <div class="tool-icon">📐</div>
+      <div class="tool-name">Free Body Diagram</div>
+      <div class="tool-desc">Draw and resolve forces on an object — weight, normal, friction and applied. Instantly see net force and resulting acceleration.</div>
+      <div class="tool-footer">
+        <span class="tool-tag">Statics</span>
+        <span class="tool-arrow">→</span>
+      </div>
+    </a>
 
-          <div class="field actions">
-            <button id="btn-launch">Launch</button>
-            <button id="btn-clear" class="secondary">Clear</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="card canvas-card">
-        <div class="card-title">Trajectory</div>
-        <canvas id="canvas" width="900" height="380"></canvas>
-      </section>
-
-      <section class="card table-card">
-        <div class="card-title">Results</div>
-        <div class="table-wrap">
-          <table class="stats">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Angle</th>
-                <th>Velocity</th>
-                <th>Max Height</th>
-                <th>Range</th>
-                <th>Time of Flight</th>
-                <th>Vx</th>
-                <th>Vy</th>
-              </tr>
-            </thead>
-            <tbody id="stats-body">
-              <tr class="empty-row">
-                <td colspan="8">No launches yet, hit Launch to begin.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-    </main>
   </div>
 
-  <script src="script.js"></script>
+  <p class="hub-footer">Physics Simulation Hub · Built with vanilla HTML, CSS &amp; JS</p>
+</div>
 </body>
 </html>

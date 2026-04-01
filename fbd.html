@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Free Body Diagram — Physics Simulation Hub</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f6f3; --surface: #fff; --border: #e5e3de;
+  --text: #1c1a17; --muted: #8a8680;
+  --accent: #ea580c; --radius: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+body { font-family: system-ui, sans-serif; font-size: 14px; background: var(--bg); color: var(--text); line-height: 1.5; }
+.page { max-width: 960px; margin: 0 auto; padding: 36px 24px; }
+.back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color 0.15s; }
+.back-link:hover { color: var(--accent); }
+header { margin-bottom: 24px; }
+h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+main { display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; }
+.card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.fields { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: 500; color: var(--muted); }
+.input-row { display: flex; }
+.input-row input { border-radius: var(--radius) 0 0 var(--radius); border-right: none; }
+input[type="number"] { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 88px; transition: border-color 0.12s, box-shadow 0.12s; }
+input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(234,88,12,0.12); }
+.unit-badge { display: flex; align-items: center; padding: 7px 9px; border: 1px solid #d1d1d6; border-left: none; border-radius: 0 var(--radius) var(--radius) 0; background: var(--bg); color: var(--muted); font-size: 11px; white-space: nowrap; }
+select { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 170px; }
+select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(234,88,12,0.12); }
+button { font-family: inherit; font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; transition: all 0.12s; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #c2410c; }
+button:active { transform: scale(0.98); }
+canvas { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 4px; background: #fafafa; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.result-item { background: var(--bg); border-radius: var(--radius); padding: 11px 14px; }
+.result-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 3px; }
+.result-val { font-size: 16px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.result-unit { font-size: 11px; color: var(--muted); margin-left: 2px; }
+.force-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.force-row:last-child { border-bottom: none; }
+.force-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.force-name { font-size: 12px; font-weight: 500; flex: 1; }
+.force-mag  { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.net-positive { color: #16a34a; }
+.net-negative { color: #dc2626; }
+.net-zero     { color: var(--muted); }
+.surface-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="back-link">← Hub</a>
+  <header>
+    <h1>Free Body Diagram</h1>
+    <p class="subtitle">Resolve forces · Find net force · Calculate acceleration</p>
+  </header>
+  <main>
+    <section class="card">
+      <div class="card-title">Object &amp; Surface</div>
+      <div class="fields">
+        <div class="field">
+          <label for="fbd-mass">Mass</label>
+          <div class="input-row">
+            <input type="number" id="fbd-mass" value="10" min="0.01" step="0.5">
+            <span class="unit-badge">kg</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fbd-angle">Surface Angle</label>
+          <div class="input-row">
+            <input type="number" id="fbd-angle" value="0" min="0" max="89" step="1">
+            <span class="unit-badge">deg</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fbd-mu">Friction Coeff (μ)</label>
+          <div class="input-row">
+            <input type="number" id="fbd-mu" value="0.3" min="0" max="2" step="0.05">
+            <span class="unit-badge">—</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fbd-applied">Applied Force</label>
+          <div class="input-row">
+            <input type="number" id="fbd-applied" value="0" min="0" step="1">
+            <span class="unit-badge">N</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fbd-applied-angle">Force Angle</label>
+          <div class="input-row">
+            <input type="number" id="fbd-applied-angle" value="0" min="-90" max="90" step="5">
+            <span class="unit-badge">deg</span>
+          </div>
+        </div>
+        <div class="field" style="align-self:flex-end">
+          <button class="btn-primary" id="fbd-calc">Draw FBD</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section class="card">
+        <div class="card-title">Free Body Diagram</div>
+        <canvas id="fbd-canvas" width="400" height="360"></canvas>
+      </section>
+
+      <section class="card">
+        <div class="card-title">Force Breakdown</div>
+        <div id="force-list"></div>
+
+        <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+          <div class="card-title" style="margin-bottom:10px;">Net &amp; Motion</div>
+          <div class="results-grid">
+            <div class="result-item">
+              <div class="result-label">Net Force X</div>
+              <div class="result-val" id="res-netx">—<span class="result-unit">N</span></div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Net Force Y</div>
+              <div class="result-val" id="res-nety">—<span class="result-unit">N</span></div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Acceleration</div>
+              <div class="result-val" id="res-acc">—<span class="result-unit">m/s²</span></div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">State</div>
+              <div class="result-val" id="res-state">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<script>
+const canvas = document.getElementById("fbd-canvas");
+const ctx    = canvas.getContext("2d");
+const g      = 9.81;
+
+const FORCE_COLORS = {
+  weight:  "#dc2626",
+  normal:  "#2563eb",
+  friction:"#d97706",
+  applied: "#16a34a",
+};
+
+function drawArrow(x1, y1, x2, y2, color, label, labelSide = "right") {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len < 2) return;
+  const ux = dx/len, uy = dy/len;
+  const headLen = 10, headAngle = Math.PI / 6;
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - headLen*(ux*Math.cos(headAngle)-uy*Math.sin(headAngle)),
+             y2 - headLen*(uy*Math.cos(headAngle)+ux*Math.sin(headAngle)));
+  ctx.lineTo(x2 - headLen*(ux*Math.cos(headAngle)+uy*Math.sin(headAngle)),
+             y2 - headLen*(uy*Math.cos(headAngle)-ux*Math.sin(headAngle)));
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  // Label
+  ctx.font = "bold 11px system-ui";
+  ctx.fillStyle = color;
+  ctx.textAlign = labelSide === "right" ? "left" : "right";
+  const offX = labelSide === "right" ? 6 : -6;
+  ctx.fillText(label, x2 + offX, y2);
+}
+
+function calculate() {
+  const mass  = parseFloat(document.getElementById("fbd-mass").value) || 10;
+  const theta = parseFloat(document.getElementById("fbd-angle").value) || 0;
+  const mu    = parseFloat(document.getElementById("fbd-mu").value) || 0;
+  const Fapp  = parseFloat(document.getElementById("fbd-applied").value) || 0;
+  const phi   = parseFloat(document.getElementById("fbd-applied-angle").value) || 0;
+
+  const thetaR = theta * Math.PI / 180;
+  const phiR   = phi   * Math.PI / 180;
+
+  // Weight components (along and perpendicular to surface)
+  const W     = mass * g;
+  const Wx    = W * Math.sin(thetaR);  // down the slope
+  const Wy    = W * Math.cos(thetaR);  // into the slope
+
+  // Applied force components
+  const Fax   = Fapp * Math.cos(phiR);
+  const Fay   = Fapp * Math.sin(phiR);
+
+  // Normal force (perpendicular to surface)
+  const N     = Math.max(0, Wy - Fay);
+
+  // Friction force (opposes motion along surface)
+  const Ff    = mu * N;
+
+  // Net force along surface
+  const netParallel = Fax - Wx - Ff;
+  const netPerp     = N - Wy + Fay;
+  const acceleration = netParallel / mass;
+
+  // Force list
+  const forces = [
+    { name: "Weight (W)",    mag: W.toFixed(2),   color: FORCE_COLORS.weight,   dir: "↓ into surface" },
+    { name: "Normal (N)",    mag: N.toFixed(2),   color: FORCE_COLORS.normal,   dir: "↑ perp. to surface" },
+    { name: "Friction (f)",  mag: Ff.toFixed(2),  color: FORCE_COLORS.friction, dir: "← opposing motion" },
+    { name: "Applied (F)",   mag: Fapp.toFixed(2),color: FORCE_COLORS.applied,  dir: `${phi}° from surface` },
+  ];
+
+  const listEl = document.getElementById("force-list");
+  listEl.innerHTML = forces.map(f => `
+    <div class="force-row">
+      <div class="force-swatch" style="background:${f.color}"></div>
+      <div class="force-name">${f.name}</div>
+      <div class="force-mag">${f.mag} N &nbsp;<span style="color:#c8c5c0;font-size:10px">${f.dir}</span></div>
+    </div>
+  `).join("");
+
+  const cls = Math.abs(netParallel) < 0.01 ? "net-zero" : netParallel > 0 ? "net-positive" : "net-negative";
+  document.getElementById("res-netx").innerHTML = `<span class="${cls}">${netParallel.toFixed(2)}</span><span class="result-unit"> N</span>`;
+  document.getElementById("res-nety").innerHTML = `${netPerp.toFixed(2)}<span class="result-unit"> N</span>`;
+  document.getElementById("res-acc").innerHTML  = `<span class="${cls}">${acceleration.toFixed(3)}</span><span class="result-unit"> m/s²</span>`;
+  document.getElementById("res-state").textContent =
+    Math.abs(acceleration) < 0.001 ? "Equilibrium" :
+    acceleration > 0 ? "Accelerating →" : "Decelerating ←";
+
+  drawDiagram(theta, thetaR, mass, W, N, Ff, Fapp, phiR, netParallel);
+}
+
+function drawDiagram(theta, thetaR, mass, W, N, Ff, Fapp, phiR, net) {
+  const W_ = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W_, H);
+  ctx.fillStyle = "#fafafa";
+  ctx.fillRect(0, 0, W_, H);
+
+  const cx = W_ / 2, cy = H / 2 + 20;
+  const blockSize = 40;
+
+  // Draw inclined surface
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-thetaR);
+
+  // Surface line
+  ctx.strokeStyle = "#9ca3af";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-120, 0);
+  ctx.lineTo(120, 0);
+  ctx.stroke();
+
+  // Hatch below surface
+  ctx.strokeStyle = "#d1d5db";
+  ctx.lineWidth = 1;
+  for (let i = -110; i <= 110; i += 16) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i - 10, 12);
+    ctx.stroke();
+  }
+
+  // Block
+  ctx.fillStyle = "#f3f4f6";
+  ctx.strokeStyle = "#6b7280";
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(-blockSize/2, -blockSize, blockSize, blockSize);
+  ctx.strokeRect(-blockSize/2, -blockSize, blockSize, blockSize);
+  ctx.font = "bold 12px system-ui";
+  ctx.fillStyle = "#374151";
+  ctx.textAlign = "center";
+  ctx.fillText(`${mass}kg`, 0, -blockSize/2 + 4);
+
+  const scale = Math.min(90, 800 / (W || 1));
+
+  // Normal force (up from surface = -y in rotated frame)
+  const Nlen = Math.min(90, N * scale / (mass * g));
+  drawArrow(0, -blockSize, 0, -blockSize - Nlen, FORCE_COLORS.normal, `N=${N.toFixed(1)}N`, "right");
+
+  // Friction (along surface)
+  const Flen = Math.min(70, Ff * scale / (mass * g) + 10);
+  if (Ff > 0.01) {
+    drawArrow(0, -blockSize/2, -Flen, -blockSize/2, FORCE_COLORS.friction, `f=${Ff.toFixed(1)}N`, "left");
+  }
+
+  ctx.restore();
+
+  // Weight — always straight down (world frame)
+  const Wlen = Math.min(90, 80);
+  drawArrow(cx, cy - blockSize * Math.cos(thetaR), cx, cy - blockSize * Math.cos(thetaR) + Wlen, FORCE_COLORS.weight, `W=${W.toFixed(1)}N`, "right");
+
+  // Applied force (from center of block)
+  if (Fapp > 0.01) {
+    const bx = cx + (blockSize/2) * Math.sin(thetaR);
+    const by = cy - (blockSize/2) * Math.cos(thetaR) - blockSize/2;
+    const Flen2 = Math.min(80, 50 + Fapp * 0.5);
+    const dirX  = Math.cos(phiR - thetaR + Math.PI);
+    const dirY  = -Math.sin(phiR - thetaR + Math.PI);
+    drawArrow(bx, by, bx + dirX * Flen2, by + dirY * Flen2, FORCE_COLORS.applied, `F=${Fapp.toFixed(1)}N`, "right");
+  }
+
+  // Net force indicator at bottom
+  ctx.font = "11px system-ui";
+  ctx.fillStyle = Math.abs(net) < 0.01 ? "#6b7280" : net > 0 ? "#16a34a" : "#dc2626";
+  ctx.textAlign = "center";
+  ctx.fillText(`Net parallel: ${net.toFixed(2)} N`, W_/2, H - 12);
+}
+
+document.getElementById("fbd-calc").addEventListener("click", calculate);
+calculate();
+</script>
+</body>
+</html>

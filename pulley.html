@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pulley System — Physics Simulation Hub</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f6f3; --surface: #fff; --border: #e5e3de;
+  --text: #1c1a17; --muted: #8a8680;
+  --accent: #9333ea; --radius: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+body { font-family: system-ui, sans-serif; font-size: 14px; background: var(--bg); color: var(--text); line-height: 1.5; }
+.page { max-width: 900px; margin: 0 auto; padding: 36px 24px; }
+.back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color 0.15s; }
+.back-link:hover { color: var(--accent); }
+header { margin-bottom: 24px; }
+h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+main { display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; }
+.card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.fields { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: 500; color: var(--muted); }
+.input-row { display: flex; }
+.input-row input { border-radius: var(--radius) 0 0 var(--radius); border-right: none; }
+input[type="number"] { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 90px; transition: border-color 0.12s, box-shadow 0.12s; }
+input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(147,51,234,0.1); }
+.unit-badge { display: flex; align-items: center; padding: 7px 9px; border: 1px solid #d1d1d6; border-left: none; border-radius: 0 var(--radius) var(--radius) 0; background: var(--bg); color: var(--muted); font-size: 11px; white-space: nowrap; }
+select { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 200px; }
+select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(147,51,234,0.1); }
+button { font-family: inherit; font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; transition: all 0.12s; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #7e22ce; }
+button:active { transform: scale(0.98); }
+canvas { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 4px; background: #fafafa; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.result-item { background: var(--bg); border-radius: var(--radius); padding: 12px 14px; }
+.result-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 4px; }
+.result-val { font-size: 18px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.result-unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
+.info-box { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: var(--radius); padding: 14px 16px; font-size: 13px; color: #6b21a8; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="back-link">← Hub</a>
+  <header>
+    <h1>Pulley System</h1>
+    <p class="subtitle">Mechanical Advantage · Tension · Acceleration</p>
+  </header>
+  <main>
+    <section class="card">
+      <div class="card-title">System Configuration</div>
+      <div class="fields">
+        <div class="field">
+          <label for="pulley-type">Pulley Type</label>
+          <select id="pulley-type">
+            <option value="fixed">Fixed (single)</option>
+            <option value="movable">Movable (single)</option>
+            <option value="compound2">Compound — 2 pulleys</option>
+            <option value="compound3">Compound — 3 pulleys</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="load-mass">Load Mass</label>
+          <div class="input-row">
+            <input type="number" id="load-mass" value="50" min="0.1" step="1">
+            <span class="unit-badge">kg</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="effort-mass">Effort Mass (optional)</label>
+          <div class="input-row">
+            <input type="number" id="effort-mass" value="0" min="0" step="1">
+            <span class="unit-badge">kg</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="rope-friction">Rope Friction</label>
+          <div class="input-row">
+            <input type="number" id="rope-friction" value="0" min="0" max="0.5" step="0.01">
+            <span class="unit-badge">N</span>
+          </div>
+        </div>
+        <div class="field" style="align-self:flex-end">
+          <button class="btn-primary" id="pulley-calc">Calculate</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section class="card">
+        <div class="card-title">Diagram</div>
+        <canvas id="pulley-canvas" width="380" height="340"></canvas>
+      </section>
+      <section class="card">
+        <div class="card-title">Results</div>
+        <div class="results-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="result-item">
+            <div class="result-label">Mech. Advantage</div>
+            <div class="result-val" id="res-ma">—</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Effort Force</div>
+            <div class="result-val" id="res-effort">—<span class="result-unit">N</span></div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Load Force</div>
+            <div class="result-val" id="res-load">—<span class="result-unit">N</span></div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Tension</div>
+            <div class="result-val" id="res-tension">—<span class="result-unit">N</span></div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Rope Segments</div>
+            <div class="result-val" id="res-segments">—</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Acceleration</div>
+            <div class="result-val" id="res-accel">—<span class="result-unit">m/s²</span></div>
+          </div>
+        </div>
+        <div class="info-box" id="pulley-info" style="margin-top:14px">
+          Select a pulley type and click Calculate.
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<script>
+const canvas = document.getElementById("pulley-canvas");
+const ctx    = canvas.getContext("2d");
+const g      = 9.81;
+
+const TYPE_CONFIG = {
+  fixed:     { ma: 1, segments: 1, label: "Fixed pulley — changes direction only." },
+  movable:   { ma: 2, segments: 2, label: "Movable pulley — halves the effort force." },
+  compound2: { ma: 2, segments: 2, label: "Compound (2 pulleys) — MA = 2." },
+  compound3: { ma: 3, segments: 3, label: "Compound (3 pulleys) — MA = 3." },
+};
+
+function calculate() {
+  const type     = document.getElementById("pulley-type").value;
+  const loadMass = parseFloat(document.getElementById("load-mass").value) || 0;
+  const effortM  = parseFloat(document.getElementById("effort-mass").value) || 0;
+  const friction = parseFloat(document.getElementById("rope-friction").value) || 0;
+  const cfg      = TYPE_CONFIG[type];
+  const ma       = cfg.ma;
+
+  const loadForce   = loadMass * g;
+  const tension     = loadForce / ma;
+  const effortForce = tension + friction;
+  const effortForceFull = effortM * g;
+
+  // Net acceleration if effort mass is given
+  let accel = "—";
+  if (effortM > 0) {
+    const netForce = effortForceFull * ma - loadForce;
+    const totalMass = loadMass + effortM * ma;
+    accel = (netForce / totalMass).toFixed(3);
+  }
+
+  document.getElementById("res-ma").textContent      = ma.toFixed(0);
+  document.getElementById("res-effort").innerHTML    = effortForce.toFixed(2) + '<span class="result-unit">N</span>';
+  document.getElementById("res-load").innerHTML      = loadForce.toFixed(2) + '<span class="result-unit">N</span>';
+  document.getElementById("res-tension").innerHTML   = tension.toFixed(2) + '<span class="result-unit">N</span>';
+  document.getElementById("res-segments").textContent = cfg.segments;
+  document.getElementById("res-accel").innerHTML     = (accel !== "—" ? accel : "—") + '<span class="result-unit">' + (accel !== "—" ? " m/s²" : "") + '</span>';
+  document.getElementById("pulley-info").textContent = cfg.label + ` Effort needed: ${effortForce.toFixed(1)} N to lift ${loadForce.toFixed(1)} N.`;
+
+  drawDiagram(type, tension, loadForce, effortForce);
+}
+
+function drawPulley(cx, cy, r) {
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = "#e9d5ff";
+  ctx.fill();
+  ctx.strokeStyle = "#7e22ce";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = "#7e22ce";
+  ctx.fill();
+}
+
+function drawBlock(cx, cy, w, h, label, color = "#9333ea") {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.roundRect(cx - w/2, cy - h/2, w, h, 4);
+  ctx.fill();
+  ctx.font = "bold 11px system-ui";
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+  ctx.fillText(label, cx, cy + 4);
+}
+
+function drawRope(x1, y1, x2, y2) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = "#4b5563";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function drawDiagram(type, tension, loadForce, effortForce) {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#fafafa";
+  ctx.fillRect(0, 0, W, H);
+
+  // Ceiling
+  ctx.fillStyle = "#d1d1d6";
+  ctx.fillRect(0, 10, W, 6);
+
+  const loadMass = parseFloat(document.getElementById("load-mass").value);
+
+  if (type === "fixed") {
+    // Single fixed pulley
+    const px = W / 2, py = 60, r = 24;
+    drawRope(px, 16, px, py - r);
+    drawPulley(px, py, r);
+    // Load rope (left)
+    drawRope(px - r, py, px - r, H - 60);
+    drawBlock(px - r, H - 40, 54, 36, `${loadMass}kg`, "#7e22ce");
+    // Effort rope (right)
+    drawRope(px + r, py, px + r, H - 60);
+    ctx.beginPath();
+    ctx.moveTo(px + r, H - 60);
+    ctx.lineTo(px + r - 8, H - 46);
+    ctx.lineTo(px + r + 8, H - 46);
+    ctx.fillStyle = "#9333ea";
+    ctx.fill();
+    ctx.font = "11px system-ui"; ctx.fillStyle = "#555"; ctx.textAlign = "center";
+    ctx.fillText(`F = ${effortForce.toFixed(1)} N`, px + r + 30, H - 50);
+    ctx.fillText(`T = ${tension.toFixed(1)} N`, px + 50, py - 10);
+
+  } else if (type === "movable") {
+    const fixedPx = W * 0.62, fixedPy = 55, r = 22;
+    const movPx   = W * 0.38, movPy   = 190;
+    drawRope(fixedPx, 16, fixedPx, fixedPy - r);
+    drawPulley(fixedPx, fixedPy, r);
+    drawPulley(movPx, movPy, r);
+    // Rope: ceiling → movable → fixed → down
+    drawRope(movPx, movPy - r, movPx, 10);          // left of movable to ceiling
+    drawRope(movPx + r, movPy, fixedPx - r, fixedPy); // movable to fixed
+    drawRope(fixedPx + r, fixedPy, fixedPx + r, H - 60); // down from fixed
+    // Load hangs from movable axle
+    drawRope(movPx, movPy + r, movPx, H - 60);
+    drawBlock(movPx, H - 40, 54, 36, `${loadMass}kg`, "#7e22ce");
+    // Effort arrow
+    ctx.beginPath();
+    ctx.moveTo(fixedPx + r, H - 60);
+    ctx.lineTo(fixedPx + r - 8, H - 46);
+    ctx.lineTo(fixedPx + r + 8, H - 46);
+    ctx.fillStyle = "#9333ea";
+    ctx.fill();
+    ctx.font = "11px system-ui"; ctx.fillStyle = "#555"; ctx.textAlign = "left";
+    ctx.fillText(`F = ${effortForce.toFixed(1)} N`, fixedPx + r + 6, H - 50);
+
+  } else {
+    // Compound — generic
+    const ma = TYPE_CONFIG[type].ma;
+    const cx = W / 2;
+    const topY = 55, botY = 180, r = 20;
+    for (let i = 0; i < ma; i++) {
+      const px = 80 + i * ((W - 160) / (ma - 1 || 1));
+      drawRope(px, 16, px, topY - r);
+      drawPulley(px, topY + (i % 2) * 80, r);
+    }
+    drawRope(cx, botY + r, cx, H - 60);
+    drawBlock(cx, H - 40, 54, 36, `${loadMass}kg`, "#7e22ce");
+    ctx.font = "12px system-ui"; ctx.fillStyle = "#7e22ce"; ctx.textAlign = "center";
+    ctx.fillText(`MA = ${ma}  ·  F = ${effortForce.toFixed(1)} N`, cx, 30);
+  }
+
+  // Force labels
+  ctx.font = "10px system-ui"; ctx.fillStyle = "#aaa"; ctx.textAlign = "center";
+  ctx.fillText(`Load = ${loadForce.toFixed(1)} N`, W / 2, H - 8);
+}
+
+document.getElementById("pulley-calc").addEventListener("click", calculate);
+calculate();
+</script>
+</body>
+</html>
