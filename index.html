@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Projectile Simulator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="page">
+
+    <header>
+      <h1>Projectile Simulator</h1>
+      <p class="subtitle">2D Physics Calculator</p>
+    </header>
+
+    <main>
+
+      <section class="card controls">
+        <div class="card-title">Parameters</div>
+
+        <div class="fields">
+          <div class="field">
+            <label for="velocity">Initial Velocity</label>
+            <div class="input-row">
+              <input type="number" id="velocity" value="50" min="1">
+              <select id="vel-unit">
+                <option value="ms">m/s</option>
+                <option value="kmh">km/h</option>
+                <option value="mph">mph</option>
+                <option value="fts">ft/s</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="angle">Launch Angle</label>
+            <div class="input-row">
+              <input type="number" id="angle" value="45" min="1" max="89">
+              <span class="unit-badge">deg</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="gravity">Environment</label>
+            <select id="gravity" class="full-width">
+              <option value="9.81">Earth — 9.81 m/s²</option>
+              <option value="1.62">Moon — 1.62 m/s²</option>
+              <option value="3.72">Mars — 3.72 m/s²</option>
+              <option value="24.79">Jupiter — 24.79 m/s²</option>
+            </select>
+          </div>
+
+          <div class="field actions">
+            <button id="btn-launch">Launch</button>
+            <button id="btn-clear" class="secondary">Clear</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card canvas-card">
+        <div class="card-title">Trajectory</div>
+        <canvas id="canvas" width="900" height="380"></canvas>
+      </section>
+
+      <section class="card table-card">
+        <div class="card-title">Results</div>
+        <div class="table-wrap">
+          <table class="stats">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Angle</th>
+                <th>Velocity</th>
+                <th>Max Height</th>
+                <th>Range</th>
+                <th>Time of Flight</th>
+                <th>Vx</th>
+                <th>Vy</th>
+              </tr>
+            </thead>
+            <tbody id="stats-body">
+              <tr class="empty-row">
+                <td colspan="8">No launches yet, hit Launch to begin.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
