@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D Projectile Motion — Physics Simulation Hub</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f6f3; --surface: #fff; --border: #e5e3de;
+  --text: #1c1a17; --muted: #8a8680;
+  --accent: #0891b2; --radius: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+body { font-family: system-ui, sans-serif; font-size: 14px; background: var(--bg); color: var(--text); line-height: 1.5; }
+.page { max-width: 1020px; margin: 0 auto; padding: 36px 24px; }
+.back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color 0.15s; }
+.back-link:hover { color: var(--accent); }
+header { margin-bottom: 24px; }
+h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+main { display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; }
+.card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.card-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.card-title-row .card-title { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.fields { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: 500; color: var(--muted); }
+.field-group { display: flex; flex-direction: column; gap: 10px; }
+.field-group-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.input-row { display: flex; }
+.input-row input { border-radius: var(--radius) 0 0 var(--radius); border-right: none; }
+input[type="number"] { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 84px; transition: border-color 0.12s, box-shadow 0.12s; }
+input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(8,145,178,0.12); }
+.unit-badge { display: flex; align-items: center; padding: 7px 9px; border: 1px solid #d1d1d6; border-left: none; border-radius: 0 var(--radius) var(--radius) 0; background: var(--bg); color: var(--muted); font-size: 11px; white-space: nowrap; }
+select { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 190px; }
+select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(8,145,178,0.12); }
+button { font-family: inherit; font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; transition: all 0.12s; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #0e7490; }
+.btn-secondary { background: var(--surface); color: var(--muted); border-color: #d1d1d6; }
+.btn-secondary:hover { background: var(--bg); color: var(--text); }
+button:active { transform: scale(0.98); }
+canvas { display: block; border: 1px solid var(--border); border-radius: 4px; background: #fafafa; cursor: grab; }
+canvas:active { cursor: grabbing; }
+.view-row { display: flex; gap: 8px; align-items: center; }
+.view-btn { font-size: 11px; padding: 4px 10px; border-radius: 4px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); cursor: pointer; transition: all 0.12s; }
+.view-btn:hover, .view-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.table-wrap { overflow-x: auto; }
+.stats { width: 100%; border-collapse: collapse; font-size: 12px; }
+.stats th { text-align: left; padding: 7px 11px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.stats td { padding: 9px 11px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stats tbody tr:last-child td { border-bottom: none; }
+.stats tbody tr:hover td { background: var(--bg); }
+.empty-row td { color: var(--muted); font-style: italic; text-align: center; padding: 24px; }
+.color-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; }
+.hint { font-size: 11px; color: var(--muted); margin-left: 10px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="back-link">← Hub</a>
+  <header>
+    <h1>3D Projectile Motion</h1>
+    <p class="subtitle">X · Y · Z trajectory simulation with drag and wind</p>
+  </header>
+  <main>
+
+    <!-- Parameters -->
+    <section class="card">
+      <div class="card-title">Launch Parameters</div>
+      <div class="fields">
+
+        <div class="field-group">
+          <div class="field-group-title">Velocity</div>
+          <div class="field">
+            <label>Speed</label>
+            <div class="input-row">
+              <input type="number" id="speed" value="50" min="1" step="1">
+              <span class="unit-badge">m/s</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Elevation angle (θ)</label>
+            <div class="input-row">
+              <input type="number" id="elev" value="45" min="1" max="89" step="1">
+              <span class="unit-badge">deg</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Azimuth angle (φ)</label>
+            <div class="input-row">
+              <input type="number" id="azim" value="0" min="-180" max="180" step="5">
+              <span class="unit-badge">deg</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Object</div>
+          <div class="field">
+            <label>Mass</label>
+            <div class="input-row">
+              <input type="number" id="mass3d" value="1" min="0.01" step="0.1">
+              <span class="unit-badge">kg</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Drag Coeff (Cd)</label>
+            <div class="input-row">
+              <input type="number" id="cd3d" value="0.47" min="0" max="2" step="0.01">
+              <span class="unit-badge">—</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Cross-section</label>
+            <div class="input-row">
+              <input type="number" id="area3d" value="0.01" min="0" step="0.001">
+              <span class="unit-badge">m²</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Environment</div>
+          <div class="field">
+            <label>Gravity</label>
+            <select id="grav3d">
+              <option value="9.81">Earth — 9.81 m/s²</option>
+              <option value="1.62">Moon — 1.62 m/s²</option>
+              <option value="3.72">Mars — 3.72 m/s²</option>
+              <option value="24.79">Jupiter — 24.79 m/s²</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Air density (ρ)</label>
+            <div class="input-row">
+              <input type="number" id="rho3d" value="1.225" min="0" step="0.001">
+              <span class="unit-badge">kg/m³</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Wind (m/s)</div>
+          <div class="field">
+            <label>Wind X (East+)</label>
+            <div class="input-row">
+              <input type="number" id="windX3d" value="0" step="0.5">
+              <span class="unit-badge">m/s</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Wind Z (North+)</label>
+            <div class="input-row">
+              <input type="number" id="windZ3d" value="0" step="0.5">
+              <span class="unit-badge">m/s</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field" style="align-self:flex-end; flex-direction:row; gap:8px;">
+          <button class="btn-primary" id="btn-launch3d">Launch</button>
+          <button class="btn-secondary" id="btn-clear3d">Clear</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3D View -->
+    <section class="card">
+      <div class="card-title-row">
+        <div class="card-title">3D Trajectory View</div>
+        <div class="view-row">
+          <span class="hint">Drag to rotate · Scroll to zoom</span>
+          <button class="view-btn active" id="vbtn-3d">3D</button>
+          <button class="view-btn" id="vbtn-top">Top (XZ)</button>
+          <button class="view-btn" id="vbtn-side">Side (XY)</button>
+          <button class="view-btn" id="vbtn-front">Front (ZY)</button>
+        </div>
+      </div>
+      <canvas id="canvas3d" width="960" height="480"></canvas>
+    </section>
+
+    <!-- Results table -->
+    <section class="card">
+      <div class="card-title">Results</div>
+      <div class="table-wrap">
+        <table class="stats">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Speed</th>
+              <th>Elev θ</th>
+              <th>Azim φ</th>
+              <th>Range X</th>
+              <th>Range Z</th>
+              <th>Total Range</th>
+              <th>Max Height</th>
+              <th>Flight Time</th>
+            </tr>
+          </thead>
+          <tbody id="stats-body-3d">
+            <tr class="empty-row"><td colspan="9">No launches yet — hit Launch to begin.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ── Canvas setup ──────────────────────────────────────────────────────
+const canvas = document.getElementById("canvas3d");
+const ctx    = canvas.getContext("2d");
+
+const COLORS = ["#0891b2","#dc2626","#16a34a","#9333ea","#ea580c","#d97706","#0d9488"];
+
+let trails3d  = [];
+let viewMode  = "3d"; // "3d" | "top" | "side" | "front"
+
+// Camera state for 3D view (spherical)
+let camTheta = 30 * Math.PI / 180;  // elevation
+let camPhi   = -40 * Math.PI / 180; // azimuth
+let camZoom  = 1.0;
+let dragging = false, lastMX = 0, lastMY = 0;
+
+// ── Mouse controls ────────────────────────────────────────────────────
+canvas.addEventListener("mousedown", e => {
+  if (viewMode !== "3d") return;
+  dragging = true; lastMX = e.clientX; lastMY = e.clientY;
+});
+window.addEventListener("mouseup", () => { dragging = false; });
+window.addEventListener("mousemove", e => {
+  if (!dragging || viewMode !== "3d") return;
+  const dx = e.clientX - lastMX, dy = e.clientY - lastMY;
+  camPhi   += dx * 0.007;
+  camTheta  = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, camTheta - dy * 0.007));
+  lastMX = e.clientX; lastMY = e.clientY;
+  drawAll3d();
+});
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  camZoom = Math.max(0.3, Math.min(3.0, camZoom * (e.deltaY > 0 ? 0.9 : 1.1)));
+  drawAll3d();
+}, { passive: false });
+
+// ── View buttons ──────────────────────────────────────────────────────
+["3d","top","side","front"].forEach(v => {
+  document.getElementById(`vbtn-${v}`).addEventListener("click", () => {
+    viewMode = v;
+    document.querySelectorAll(".view-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById(`vbtn-${v}`).classList.add("active");
+    drawAll3d();
+  });
+});
+
+// ── Simulation ────────────────────────────────────────────────────────
+function simulate3d(speed, elevDeg, azimDeg, g, Cd, area, mass, rho, windX, windZ) {
+  const elevR = elevDeg * Math.PI / 180;
+  const azimR = azimDeg * Math.PI / 180;
+
+  // Initial velocity components
+  // X = East, Y = up, Z = North
+  const horizSpeed = speed * Math.cos(elevR);
+  let vx = horizSpeed * Math.cos(azimR);
+  let vy = speed * Math.sin(elevR);
+  let vz = horizSpeed * Math.sin(azimR);
+
+  const k  = 0.5 * Cd * area * rho / mass;
+  const dt = 0.02;
+  let x = 0, y = 0, z = 0;
+  const pts = [];
+
+  while (true) {
+    pts.push({ x, y: Math.max(0, y), z });
+    if (pts.length > 1 && y < 0) break;
+    if (pts.length > 20000) break;
+
+    // Velocity relative to air
+    const vrx = vx - windX, vry = vy, vrz = vz - windZ;
+    const spd = Math.sqrt(vrx*vrx + vry*vry + vrz*vrz);
+    const drag = k * spd * spd;
+
+    const ax = -drag * (vrx / (spd || 1));
+    const ay = -drag * (vry / (spd || 1)) - g;
+    const az = -drag * (vrz / (spd || 1));
+
+    vx += ax * dt; vy += ay * dt; vz += az * dt;
+    x  += vx * dt; y  += vy * dt; z  += vz * dt;
+  }
+  return pts;
+}
+
+document.getElementById("btn-launch3d").addEventListener("click", () => {
+  const speed   = parseFloat(document.getElementById("speed").value)   || 50;
+  const elev    = parseFloat(document.getElementById("elev").value)    || 45;
+  const azim    = parseFloat(document.getElementById("azim").value)    || 0;
+  const mass    = parseFloat(document.getElementById("mass3d").value)  || 1;
+  const Cd      = parseFloat(document.getElementById("cd3d").value)    || 0;
+  const area    = parseFloat(document.getElementById("area3d").value)  || 0.01;
+  const g       = parseFloat(document.getElementById("grav3d").value)  || 9.81;
+  const rho     = parseFloat(document.getElementById("rho3d").value)   || 1.225;
+  const windX   = parseFloat(document.getElementById("windX3d").value) || 0;
+  const windZ   = parseFloat(document.getElementById("windZ3d").value) || 0;
+
+  const pts = simulate3d(speed, elev, azim, g, Cd, area, mass, rho, windX, windZ);
+  const maxY  = Math.max(...pts.map(p => p.y));
+  const last  = pts[pts.length - 1];
+  const rangeX = last.x, rangeZ = last.z;
+  const totalRange = Math.sqrt(rangeX*rangeX + rangeZ*rangeZ);
+  const flightTime = pts.length * 0.02;
+  const color = COLORS[trails3d.length % COLORS.length];
+
+  trails3d.push({ pts, speed, elev, azim, maxY, rangeX, rangeZ, totalRange, flightTime, color });
+  drawAll3d();
+  updateTable3d();
+});
+
+document.getElementById("btn-clear3d").addEventListener("click", () => {
+  trails3d = [];
+  drawAll3d();
+  document.getElementById("stats-body-3d").innerHTML =
+    `<tr class="empty-row"><td colspan="9">No launches yet — hit Launch to begin.</td></tr>`;
+});
+
+// ── 3D → 2D projection ────────────────────────────────────────────────
+// Isometric-style projection with orbiting camera
+
+function project3d(x, y, z, cx, cy, scale) {
+  // Rotate around Y axis by camPhi, then tilt by camTheta
+  const cosP = Math.cos(camPhi), sinP = Math.sin(camPhi);
+  const cosT = Math.cos(camTheta), sinT = Math.sin(camTheta);
+
+  const rx =  x * cosP + z * sinP;
+  const ry = -x * sinP * sinT + y * cosT - z * cosP * sinT;
+  // rz is depth (not used for 2d but useful for clipping)
+
+  return { sx: cx + rx * scale, sy: cy - ry * scale };
+}
+
+function project2d_top(x, y, z, cx, cy, scale) {
+  // XZ plane (bird's eye) — X is right, Z is up
+  return { sx: cx + x * scale, sy: cy - z * scale };
+}
+function project2d_side(x, y, z, cx, cy, scale) {
+  // XY plane — X is right, Y is up
+  return { sx: cx + x * scale, sy: cy - y * scale };
+}
+function project2d_front(x, y, z, cx, cy, scale) {
+  // ZY plane — Z is right, Y is up
+  return { sx: cx + z * scale, sy: cy - y * scale };
+}
+
+function getProjector() {
+  if (viewMode === "top")   return project2d_top;
+  if (viewMode === "side")  return project2d_side;
+  if (viewMode === "front") return project2d_front;
+  return project3d;
+}
+
+function getAxisLabels() {
+  if (viewMode === "top")   return { h: "X (East, m)", v: "Z (North, m)" };
+  if (viewMode === "side")  return { h: "X (East, m)",  v: "Y (Height, m)" };
+  if (viewMode === "front") return { h: "Z (North, m)", v: "Y (Height, m)" };
+  return null;
+}
+
+// ── Draw ──────────────────────────────────────────────────────────────
+function drawAll3d() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#fafafa";
+  ctx.fillRect(0, 0, W, H);
+
+  if (trails3d.length === 0) {
+    ctx.font = "13px system-ui"; ctx.fillStyle = "#aaa"; ctx.textAlign = "center";
+    ctx.fillText("Set parameters and click Launch", W / 2, H / 2);
+    ctx.textAlign = "left";
+    return;
+  }
+
+  // Determine bounding box of all points
+  const allX = trails3d.flatMap(t => t.pts.map(p => p.x));
+  const allY = trails3d.flatMap(t => t.pts.map(p => p.y));
+  const allZ = trails3d.flatMap(t => t.pts.map(p => p.z));
+  const minX = Math.min(...allX), maxX = Math.max(...allX);
+  const minY = 0,                  maxY = Math.max(...allY, 1);
+  const minZ = Math.min(...allZ), maxZ = Math.max(...allZ);
+
+  const spanX = maxX - minX || 1;
+  const spanY = maxY - minY || 1;
+  const spanZ = maxZ - minZ || 1;
+  const maxSpan = Math.max(spanX, spanY, spanZ);
+
+  const pad = 60;
+  const scale = ((Math.min(W, H) - pad * 2) / maxSpan) * camZoom;
+  const cx = W / 2, cy = H / 2;
+
+  const proj = getProjector();
+
+  // Ground grid (only in 3d and top view)
+  if (viewMode === "3d" || viewMode === "top") {
+    const gridSteps = 5;
+    const gx0 = Math.floor(minX / 10) * 10;
+    const gz0 = Math.floor(minZ / 10) * 10;
+    const gxN = Math.ceil(maxX / 10) * 10;
+    const gzN = Math.ceil(maxZ / 10) * 10;
+
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 1;
+    for (let gx = gx0; gx <= gxN; gx += (gxN - gx0) / gridSteps || 10) {
+      const a = proj(gx, 0, gz0, cx, cy, scale);
+      const b = proj(gx, 0, gzN, cx, cy, scale);
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+    }
+    for (let gz = gz0; gz <= gzN; gz += (gzN - gz0) / gridSteps || 10) {
+      const a = proj(gx0, 0, gz, cx, cy, scale);
+      const b = proj(gxN, 0, gz, cx, cy, scale);
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+    }
+  }
+
+  // Axes (3d mode)
+  if (viewMode === "3d") {
+    const axLen = maxSpan * 0.5;
+    const origin = proj(minX, 0, minZ, cx, cy, scale);
+    const axX    = proj(minX + axLen, 0, minZ, cx, cy, scale);
+    const axY    = proj(minX, axLen, minZ, cx, cy, scale);
+    const axZ    = proj(minX, 0, minZ + axLen, cx, cy, scale);
+
+    [
+      { end: axX, color: "#dc2626", label: "X (East)" },
+      { end: axY, color: "#16a34a", label: "Y (Up)" },
+      { end: axZ, color: "#2563eb", label: "Z (North)" },
+    ].forEach(ax => {
+      ctx.beginPath();
+      ctx.moveTo(origin.sx, origin.sy);
+      ctx.lineTo(ax.end.sx, ax.end.sy);
+      ctx.strokeStyle = ax.color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.font = "bold 11px system-ui";
+      ctx.fillStyle = ax.color;
+      ctx.textAlign = "center";
+      ctx.fillText(ax.label, ax.end.sx, ax.end.sy - 6);
+    });
+  }
+
+  // 2D view axis labels
+  const axLabels = getAxisLabels();
+  if (axLabels) {
+    ctx.font = "11px system-ui"; ctx.fillStyle = "#aaa";
+    ctx.textAlign = "center";
+    ctx.fillText(`← ${axLabels.h} →`, W / 2, H - 8);
+    ctx.save();
+    ctx.translate(14, H / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(`← ${axLabels.v} →`, 0, 0);
+    ctx.restore();
+  }
+
+  // Draw trajectories
+  trails3d.forEach(trail => {
+    const pts = trail.pts;
+
+    // Ground shadow (only in 3d mode)
+    if (viewMode === "3d") {
+      ctx.beginPath();
+      pts.forEach((p, i) => {
+        const s = proj(p.x, 0, p.z, cx, cy, scale);
+        i === 0 ? ctx.moveTo(s.sx, s.sy) : ctx.lineTo(s.sx, s.sy);
+      });
+      ctx.strokeStyle = trail.color + "30";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Main trajectory
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const s = proj(p.x, p.y, p.z, cx, cy, scale);
+      i === 0 ? ctx.moveTo(s.sx, s.sy) : ctx.lineTo(s.sx, s.sy);
+    });
+    ctx.strokeStyle = trail.color;
+    ctx.lineWidth   = 2;
+    ctx.lineJoin    = "round";
+    ctx.stroke();
+
+    // Launch and landing dots
+    [pts[0], pts[pts.length - 1]].forEach(p => {
+      const s = proj(p.x, p.y, p.z, cx, cy, scale);
+      ctx.beginPath();
+      ctx.arc(s.sx, s.sy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = trail.color;
+      ctx.fill();
+    });
+
+    // Apex dot (hollow)
+    const apexPt = pts.reduce((best, p) => p.y > best.y ? p : best, pts[0]);
+    const apexS  = proj(apexPt.x, apexPt.y, apexPt.z, cx, cy, scale);
+    ctx.beginPath();
+    ctx.arc(apexS.sx, apexS.sy, 4, 0, Math.PI * 2);
+    ctx.strokeStyle = trail.color;
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = "#fafafa";
+    ctx.fill(); ctx.stroke();
+
+    // Vertical drop line from apex to ground (3d only)
+    if (viewMode === "3d") {
+      const apexGnd = proj(apexPt.x, 0, apexPt.z, cx, cy, scale);
+      ctx.beginPath();
+      ctx.moveTo(apexS.sx, apexS.sy);
+      ctx.lineTo(apexGnd.sx, apexGnd.sy);
+      ctx.strokeStyle = trail.color + "50";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+}
+
+// ── Table ─────────────────────────────────────────────────────────────
+function updateTable3d() {
+  const tbody = document.getElementById("stats-body-3d");
+  tbody.innerHTML = "";
+  trails3d.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="color-dot" style="background:${t.color}"></span></td>
+      <td>${t.speed} m/s</td>
+      <td>${t.elev}°</td>
+      <td>${t.azim}°</td>
+      <td>${t.rangeX.toFixed(2)} m</td>
+      <td>${t.rangeZ.toFixed(2)} m</td>
+      <td>${t.totalRange.toFixed(2)} m</td>
+      <td>${t.maxY.toFixed(2)} m</td>
+      <td>${t.flightTime.toFixed(3)} s</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+drawAll3d();
+</script>
+</body>
+</html>

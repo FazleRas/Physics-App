@@ -12,7 +12,7 @@
   --shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 body { font-family: system-ui, sans-serif; font-size: 14px; background: var(--bg); color: var(--text); line-height: 1.5; }
-.page { max-width: 900px; margin: 0 auto; padding: 36px 24px; }
+.page { max-width: 960px; margin: 0 auto; padding: 36px 24px; }
 .back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color 0.15s; }
 .back-link:hover { color: var(--accent); }
 header { margin-bottom: 24px; }
@@ -29,20 +29,20 @@ main { display: flex; flex-direction: column; gap: 12px; }
 input[type="number"] { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 90px; transition: border-color 0.12s, box-shadow 0.12s; }
 input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(147,51,234,0.1); }
 .unit-badge { display: flex; align-items: center; padding: 7px 9px; border: 1px solid #d1d1d6; border-left: none; border-radius: 0 var(--radius) var(--radius) 0; background: var(--bg); color: var(--muted); font-size: 11px; white-space: nowrap; }
-select { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 200px; }
+select { font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #d1d1d6; background: var(--surface); color: var(--text); outline: none; border-radius: var(--radius); width: 230px; }
 select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(147,51,234,0.1); }
 button { font-family: inherit; font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; transition: all 0.12s; }
 .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn-primary:hover { background: #7e22ce; }
 button:active { transform: scale(0.98); }
 canvas { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 4px; background: #fafafa; }
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.layout { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .result-item { background: var(--bg); border-radius: var(--radius); padding: 12px 14px; }
 .result-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 4px; }
 .result-val { font-size: 18px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 .result-unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
-.info-box { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: var(--radius); padding: 14px 16px; font-size: 13px; color: #6b21a8; line-height: 1.6; }
+.info-box { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: #6b21a8; line-height: 1.6; margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -59,31 +59,31 @@ canvas { display: block; width: 100%; height: auto; border: 1px solid var(--bord
         <div class="field">
           <label for="pulley-type">Pulley Type</label>
           <select id="pulley-type">
-            <option value="fixed">Fixed (single)</option>
-            <option value="movable">Movable (single)</option>
-            <option value="compound2">Compound — 2 pulleys</option>
-            <option value="compound3">Compound — 3 pulleys</option>
+            <option value="fixed">Fixed — single (MA = 1)</option>
+            <option value="movable">Movable — single (MA = 2)</option>
+            <option value="compound2">Compound — block & tackle, 2 movable (MA = 4)</option>
+            <option value="compound3">Compound — block & tackle, 3 movable (MA = 6)</option>
           </select>
         </div>
         <div class="field">
           <label for="load-mass">Load Mass</label>
           <div class="input-row">
-            <input type="number" id="load-mass" value="50" min="0.1" step="1">
+            <input type="number" id="load-mass" value="60" min="0.1" step="1">
             <span class="unit-badge">kg</span>
           </div>
         </div>
         <div class="field">
-          <label for="effort-mass">Effort Mass (optional)</label>
+          <label for="effort-force">Applied Effort</label>
           <div class="input-row">
-            <input type="number" id="effort-mass" value="0" min="0" step="1">
-            <span class="unit-badge">kg</span>
-          </div>
-        </div>
-        <div class="field">
-          <label for="rope-friction">Rope Friction</label>
-          <div class="input-row">
-            <input type="number" id="rope-friction" value="0" min="0" max="0.5" step="0.01">
+            <input type="number" id="effort-force" value="0" min="0" step="1">
             <span class="unit-badge">N</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="rope-mu">Rope Efficiency</label>
+          <div class="input-row">
+            <input type="number" id="rope-mu" value="1.0" min="0.1" max="1.0" step="0.05">
+            <span class="unit-badge">0–1</span>
           </div>
         </div>
         <div class="field" style="align-self:flex-end">
@@ -92,201 +92,383 @@ canvas { display: block; width: 100%; height: auto; border: 1px solid var(--bord
       </div>
     </section>
 
-    <div class="two-col">
+    <div class="layout">
       <section class="card">
         <div class="card-title">Diagram</div>
-        <canvas id="pulley-canvas" width="380" height="340"></canvas>
+        <canvas id="pulley-canvas" width="400" height="420"></canvas>
       </section>
       <section class="card">
         <div class="card-title">Results</div>
-        <div class="results-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="results-grid">
           <div class="result-item">
-            <div class="result-label">Mech. Advantage</div>
+            <div class="result-label">Mech. Advantage (ideal)</div>
             <div class="result-val" id="res-ma">—</div>
           </div>
           <div class="result-item">
-            <div class="result-label">Effort Force</div>
-            <div class="result-val" id="res-effort">—<span class="result-unit">N</span></div>
+            <div class="result-label">Rope Segments on Load</div>
+            <div class="result-val" id="res-segments">—</div>
           </div>
           <div class="result-item">
             <div class="result-label">Load Force</div>
             <div class="result-val" id="res-load">—<span class="result-unit">N</span></div>
           </div>
           <div class="result-item">
-            <div class="result-label">Tension</div>
+            <div class="result-label">Tension per Segment</div>
             <div class="result-val" id="res-tension">—<span class="result-unit">N</span></div>
           </div>
           <div class="result-item">
-            <div class="result-label">Rope Segments</div>
-            <div class="result-val" id="res-segments">—</div>
+            <div class="result-label">Min Effort Needed</div>
+            <div class="result-val" id="res-effort-min">—<span class="result-unit">N</span></div>
           </div>
           <div class="result-item">
-            <div class="result-label">Acceleration</div>
+            <div class="result-label">Applied Effort</div>
+            <div class="result-val" id="res-effort-applied">—<span class="result-unit">N</span></div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Net Force on Load</div>
+            <div class="result-val" id="res-net">—<span class="result-unit">N</span></div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Load Acceleration</div>
             <div class="result-val" id="res-accel">—<span class="result-unit">m/s²</span></div>
           </div>
         </div>
-        <div class="info-box" id="pulley-info" style="margin-top:14px">
-          Select a pulley type and click Calculate.
-        </div>
+        <div class="info-box" id="pulley-info">Select a pulley type and click Calculate.</div>
       </section>
     </div>
   </main>
 </div>
+
 <script>
 const canvas = document.getElementById("pulley-canvas");
 const ctx    = canvas.getContext("2d");
-const g      = 9.81;
+const G      = 9.81;
 
-const TYPE_CONFIG = {
-  fixed:     { ma: 1, segments: 1, label: "Fixed pulley — changes direction only." },
-  movable:   { ma: 2, segments: 2, label: "Movable pulley — halves the effort force." },
-  compound2: { ma: 2, segments: 2, label: "Compound (2 pulleys) — MA = 2." },
-  compound3: { ma: 3, segments: 3, label: "Compound (3 pulleys) — MA = 3." },
+// ── Physics ────────────────────────────────────────────────────────────
+// For a block-and-tackle:
+//   MA (ideal) = number of rope segments supporting the moving block
+//   Fixed pulleys: 1 fixed → MA=1 (just redirects)
+//   1 movable: 2 rope segments → MA=2
+//   2 movable: 4 segments → MA=4
+//   3 movable: 6 segments → MA=6
+// With efficiency η: effective MA = η × ideal MA
+// Tension per segment T = W / (η × MA)
+// Min effort to hold/lift = T (with efficiency)
+
+const CONFIGS = {
+  fixed:     { idealMA: 1, segments: 1, movablePulleys: 0, fixedPulleys: 1 },
+  movable:   { idealMA: 2, segments: 2, movablePulleys: 1, fixedPulleys: 1 },
+  compound2: { idealMA: 4, segments: 4, movablePulleys: 2, fixedPulleys: 2 },
+  compound3: { idealMA: 6, segments: 6, movablePulleys: 3, fixedPulleys: 3 },
 };
 
 function calculate() {
-  const type     = document.getElementById("pulley-type").value;
-  const loadMass = parseFloat(document.getElementById("load-mass").value) || 0;
-  const effortM  = parseFloat(document.getElementById("effort-mass").value) || 0;
-  const friction = parseFloat(document.getElementById("rope-friction").value) || 0;
-  const cfg      = TYPE_CONFIG[type];
-  const ma       = cfg.ma;
+  const type      = document.getElementById("pulley-type").value;
+  const loadMass  = parseFloat(document.getElementById("load-mass").value)   || 0;
+  const effortN   = parseFloat(document.getElementById("effort-force").value) || 0;
+  const eta       = Math.min(1, Math.max(0.01, parseFloat(document.getElementById("rope-mu").value) || 1));
+  const cfg       = CONFIGS[type];
 
-  const loadForce   = loadMass * g;
-  const tension     = loadForce / ma;
-  const effortForce = tension + friction;
-  const effortForceFull = effortM * g;
+  const W         = loadMass * G;                    // load weight (N)
+  const effMA     = eta * cfg.idealMA;               // effective MA with efficiency
+  const tension   = W / effMA;                       // tension in each rope segment
+  const minEffort = tension;                         // min effort to just support load
+  const netForce  = effortN * effMA - W;             // net upward force on load
+  const accel     = netForce / loadMass;             // load acceleration (m/s²)
 
-  // Net acceleration if effort mass is given
-  let accel = "—";
-  if (effortM > 0) {
-    const netForce = effortForceFull * ma - loadForce;
-    const totalMass = loadMass + effortM * ma;
-    accel = (netForce / totalMass).toFixed(3);
-  }
+  // UI
+  document.getElementById("res-ma").textContent          = cfg.idealMA;
+  document.getElementById("res-segments").textContent    = cfg.segments;
+  document.getElementById("res-load").innerHTML          = W.toFixed(1) + '<span class="result-unit"> N</span>';
+  document.getElementById("res-tension").innerHTML       = tension.toFixed(2) + '<span class="result-unit"> N</span>';
+  document.getElementById("res-effort-min").innerHTML    = minEffort.toFixed(2) + '<span class="result-unit"> N</span>';
+  document.getElementById("res-effort-applied").innerHTML = effortN.toFixed(1) + '<span class="result-unit"> N</span>';
+  document.getElementById("res-net").innerHTML           = netForce.toFixed(2) + '<span class="result-unit"> N</span>';
+  document.getElementById("res-accel").innerHTML         = (loadMass > 0 ? accel.toFixed(3) : "—") + '<span class="result-unit"> m/s²</span>';
 
-  document.getElementById("res-ma").textContent      = ma.toFixed(0);
-  document.getElementById("res-effort").innerHTML    = effortForce.toFixed(2) + '<span class="result-unit">N</span>';
-  document.getElementById("res-load").innerHTML      = loadForce.toFixed(2) + '<span class="result-unit">N</span>';
-  document.getElementById("res-tension").innerHTML   = tension.toFixed(2) + '<span class="result-unit">N</span>';
-  document.getElementById("res-segments").textContent = cfg.segments;
-  document.getElementById("res-accel").innerHTML     = (accel !== "—" ? accel : "—") + '<span class="result-unit">' + (accel !== "—" ? " m/s²" : "") + '</span>';
-  document.getElementById("pulley-info").textContent = cfg.label + ` Effort needed: ${effortForce.toFixed(1)} N to lift ${loadForce.toFixed(1)} N.`;
+  const descriptions = {
+    fixed:     `A single fixed pulley changes the direction of force only — you pull down to lift the load up. It provides no mechanical advantage (MA = 1), so you need ${W.toFixed(1)} N.`,
+    movable:   `A single movable pulley gives MA = 2. Two rope segments support the load, so tension in each is ${tension.toFixed(1)} N. You only need ${minEffort.toFixed(1)} N of effort.`,
+    compound2: `Two movable pulleys (block & tackle) give MA = 4. Four rope segments share the load, tension = ${tension.toFixed(1)} N each. Min effort: ${minEffort.toFixed(1)} N.`,
+    compound3: `Three movable pulleys give MA = 6. Six rope segments share the load, tension = ${tension.toFixed(1)} N each. Min effort: ${minEffort.toFixed(1)} N.`,
+  };
+  document.getElementById("pulley-info").textContent = descriptions[type];
 
-  drawDiagram(type, tension, loadForce, effortForce);
+  drawDiagram(type, cfg, W, tension, minEffort, effortN, loadMass);
 }
 
-function drawPulley(cx, cy, r) {
+// ── Drawing helpers ────────────────────────────────────────────────────
+function pulleyCircle(cx, cy, r) {
+  // Outer ring
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = "#e9d5ff";
+  ctx.fillStyle = "#f3e8ff";
   ctx.fill();
   ctx.strokeStyle = "#7e22ce";
   ctx.lineWidth = 2;
   ctx.stroke();
+  // Axle dot
   ctx.beginPath();
   ctx.arc(cx, cy, 4, 0, Math.PI * 2);
   ctx.fillStyle = "#7e22ce";
   ctx.fill();
 }
 
-function drawBlock(cx, cy, w, h, label, color = "#9333ea") {
-  ctx.fillStyle = color;
+function rope(x1, y1, x2, y2) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = "#374151";
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = "round";
+  ctx.stroke();
+}
+
+function loadBlock(cx, cy, label) {
+  const w = 64, h = 36;
+  ctx.fillStyle = "#7e22ce";
   ctx.beginPath();
   ctx.roundRect(cx - w/2, cy - h/2, w, h, 4);
   ctx.fill();
   ctx.font = "bold 11px system-ui";
   ctx.fillStyle = "#fff";
   ctx.textAlign = "center";
-  ctx.fillText(label, cx, cy + 4);
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, cx, cy);
+  ctx.textBaseline = "alphabetic";
 }
 
-function drawRope(x1, y1, x2, y2) {
+function effortArrow(x, y, up, label) {
+  // draws an upward or downward arrow at (x,y)
+  const len = 32;
+  const dy  = up ? -len : len;
   ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.strokeStyle = "#4b5563";
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y + dy);
+  ctx.strokeStyle = "#16a34a";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  // arrowhead
+  const tip = y + dy;
+  const dir = up ? -1 : 1;
+  ctx.beginPath();
+  ctx.moveTo(x, tip);
+  ctx.lineTo(x - 7, tip - dir * 10);
+  ctx.lineTo(x + 7, tip - dir * 10);
+  ctx.closePath();
+  ctx.fillStyle = "#16a34a";
+  ctx.fill();
+  ctx.font = "11px system-ui";
+  ctx.fillStyle = "#16a34a";
+  ctx.textAlign = "left";
+  ctx.fillText(label, x + 10, tip + (up ? 4 : -4));
+}
+
+function tensionLabel(x, y, val) {
+  ctx.font = "10px system-ui";
+  ctx.fillStyle = "#9333ea";
+  ctx.textAlign = "center";
+  ctx.fillText(`T=${val}N`, x, y);
+}
+
+function ceiling(W) {
+  ctx.fillStyle = "#d1d5db";
+  ctx.fillRect(0, 0, W, 14);
+  // hatching
+  ctx.strokeStyle = "#9ca3af";
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 14) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x - 10, 14); ctx.stroke();
+  }
+}
+
+function axleSupport(cx, cy) {
+  // Small bracket from ceiling to fixed pulley axle
+  ctx.beginPath();
+  ctx.moveTo(cx, 14);
+  ctx.lineTo(cx, cy);
+  ctx.strokeStyle = "#6b7280";
   ctx.lineWidth = 2;
   ctx.stroke();
 }
 
-function drawDiagram(type, tension, loadForce, effortForce) {
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = "#fafafa";
-  ctx.fillRect(0, 0, W, H);
+// ── Diagram drawers ────────────────────────────────────────────────────
+function drawFixed(W, H, tension, minEffort, effortN, loadMass) {
+  const cx = W / 2;
+  const r  = 28;
+  const py = 80;   // pulley centre y
+  const loadY = H - 60;
 
-  // Ceiling
-  ctx.fillStyle = "#d1d1d6";
-  ctx.fillRect(0, 10, W, 6);
+  ceiling(W);
+  axleSupport(cx, py);
+  pulleyCircle(cx, py, r);
 
-  const loadMass = parseFloat(document.getElementById("load-mass").value);
+  // Left rope: load hangs here
+  rope(cx - r, py, cx - r, loadY - 18);
+  loadBlock(cx - r, loadY, `${document.getElementById("load-mass").value} kg`);
 
-  if (type === "fixed") {
-    // Single fixed pulley
-    const px = W / 2, py = 60, r = 24;
-    drawRope(px, 16, px, py - r);
-    drawPulley(px, py, r);
-    // Load rope (left)
-    drawRope(px - r, py, px - r, H - 60);
-    drawBlock(px - r, H - 40, 54, 36, `${loadMass}kg`, "#7e22ce");
-    // Effort rope (right)
-    drawRope(px + r, py, px + r, H - 60);
-    ctx.beginPath();
-    ctx.moveTo(px + r, H - 60);
-    ctx.lineTo(px + r - 8, H - 46);
-    ctx.lineTo(px + r + 8, H - 46);
-    ctx.fillStyle = "#9333ea";
-    ctx.fill();
-    ctx.font = "11px system-ui"; ctx.fillStyle = "#555"; ctx.textAlign = "center";
-    ctx.fillText(`F = ${effortForce.toFixed(1)} N`, px + r + 30, H - 50);
-    ctx.fillText(`T = ${tension.toFixed(1)} N`, px + 50, py - 10);
+  // Right rope: effort side — rope goes down then curves under, effort pulls down
+  rope(cx + r, py, cx + r, loadY - 18);
+  effortArrow(cx + r, loadY - 18, false, `F = ${minEffort.toFixed(1)} N`);
 
-  } else if (type === "movable") {
-    const fixedPx = W * 0.62, fixedPy = 55, r = 22;
-    const movPx   = W * 0.38, movPy   = 190;
-    drawRope(fixedPx, 16, fixedPx, fixedPy - r);
-    drawPulley(fixedPx, fixedPy, r);
-    drawPulley(movPx, movPy, r);
-    // Rope: ceiling → movable → fixed → down
-    drawRope(movPx, movPy - r, movPx, 10);          // left of movable to ceiling
-    drawRope(movPx + r, movPy, fixedPx - r, fixedPy); // movable to fixed
-    drawRope(fixedPx + r, fixedPy, fixedPx + r, H - 60); // down from fixed
-    // Load hangs from movable axle
-    drawRope(movPx, movPy + r, movPx, H - 60);
-    drawBlock(movPx, H - 40, 54, 36, `${loadMass}kg`, "#7e22ce");
-    // Effort arrow
-    ctx.beginPath();
-    ctx.moveTo(fixedPx + r, H - 60);
-    ctx.lineTo(fixedPx + r - 8, H - 46);
-    ctx.lineTo(fixedPx + r + 8, H - 46);
-    ctx.fillStyle = "#9333ea";
-    ctx.fill();
-    ctx.font = "11px system-ui"; ctx.fillStyle = "#555"; ctx.textAlign = "left";
-    ctx.fillText(`F = ${effortForce.toFixed(1)} N`, fixedPx + r + 6, H - 50);
+  // Tension label
+  tensionLabel(cx, py - r - 12, tension.toFixed(1));
 
-  } else {
-    // Compound — generic
-    const ma = TYPE_CONFIG[type].ma;
-    const cx = W / 2;
-    const topY = 55, botY = 180, r = 20;
-    for (let i = 0; i < ma; i++) {
-      const px = 80 + i * ((W - 160) / (ma - 1 || 1));
-      drawRope(px, 16, px, topY - r);
-      drawPulley(px, topY + (i % 2) * 80, r);
-    }
-    drawRope(cx, botY + r, cx, H - 60);
-    drawBlock(cx, H - 40, 54, 36, `${loadMass}kg`, "#7e22ce");
-    ctx.font = "12px system-ui"; ctx.fillStyle = "#7e22ce"; ctx.textAlign = "center";
-    ctx.fillText(`MA = ${ma}  ·  F = ${effortForce.toFixed(1)} N`, cx, 30);
+  // Info
+  ctx.font = "11px system-ui"; ctx.fillStyle = "#6b7280"; ctx.textAlign = "center";
+  ctx.fillText("Fixed pulley — direction change only (MA = 1)", cx, H - 10);
+}
+
+function drawMovable(W, H, tension, minEffort, effortN, loadMass) {
+  const r       = 26;
+  const fixedX  = W * 0.62, fixedY = 80;
+  const movX    = W * 0.38, movY  = 220;
+  const loadY   = H - 55;
+
+  ceiling(W);
+
+  // Bracket for fixed pulley
+  axleSupport(fixedX, fixedY);
+  // Left rope from ceiling directly to movable pulley top-left
+  // The movable pulley's axle carries the load; two rope segments support it:
+  //   Segment 1: ceiling → left side of movable pulley
+  //   Segment 2: right side of movable pulley → over fixed pulley → effort
+
+  // Segment 1: ceiling attachment at movX to movable pulley
+  rope(movX, 14, movX, movY - r);
+
+  // Segment 2: movable right → fixed left → down to effort
+  rope(movX + r, movY, fixedX - r, fixedY);
+
+  // Fixed pulley
+  pulleyCircle(fixedX, fixedY, r);
+  // Movable pulley
+  pulleyCircle(movX, movY, r);
+
+  // Load hangs from movable axle
+  rope(movX, movY + r, movX, loadY - 18);
+  loadBlock(movX, loadY, `${document.getElementById("load-mass").value} kg`);
+
+  // Effort rope comes down from right of fixed pulley
+  rope(fixedX + r, fixedY, fixedX + r, H - 90);
+  effortArrow(fixedX + r, H - 90, false, `F = ${minEffort.toFixed(1)} N`);
+
+  // Tension labels on both rope segments
+  ctx.font = "10px system-ui"; ctx.fillStyle = "#9333ea"; ctx.textAlign = "center";
+  ctx.fillText(`T=${tension.toFixed(1)}N`, movX - 20, (14 + movY - r) / 2);
+  ctx.fillText(`T=${tension.toFixed(1)}N`, (movX + r + fixedX - r) / 2, (movY + fixedY) / 2 - 10);
+
+  ctx.font = "11px system-ui"; ctx.fillStyle = "#6b7280"; ctx.textAlign = "center";
+  ctx.fillText("Movable pulley — MA = 2", W / 2, H - 10);
+}
+
+function drawCompound(W, H, tension, minEffort, effortN, loadMass, numMovable) {
+  // Block & tackle: numMovable movable pulleys + numMovable fixed pulleys
+  // MA = 2 × numMovable
+  // Layout: movable block (lower) hangs, fixed block (upper) is at ceiling
+  // Rope zig-zags between them numMovable times, then goes to effort
+
+  const MA      = numMovable * 2;
+  const rF      = 18;   // fixed pulley radius
+  const rM      = 18;   // movable pulley radius
+  const spacing = (W - 80) / Math.max(numMovable, 1);
+
+  // Fixed pulleys sit just below ceiling
+  const fixedY  = 70;
+  // Movable block sits at ~60% height
+  const movY    = 230;
+  const loadY   = H - 55;
+
+  ceiling(W);
+
+  // Positions of each fixed and movable pulley
+  const fixedPulleys = [];
+  const movPulleys   = [];
+  for (let i = 0; i < numMovable; i++) {
+    fixedPulleys.push({ x: 50 + i * spacing + spacing / 2, y: fixedY });
+    movPulleys.push({   x: 50 + i * spacing + spacing / 2, y: movY   });
   }
 
-  // Force labels
-  ctx.font = "10px system-ui"; ctx.fillStyle = "#aaa"; ctx.textAlign = "center";
-  ctx.fillText(`Load = ${loadForce.toFixed(1)} N`, W / 2, H - 8);
+  // Draw axle supports for fixed pulleys
+  fixedPulleys.forEach(p => axleSupport(p.x, p.y));
+
+  // Rope routing for block-and-tackle:
+  // The rope starts anchored at the FIXED BLOCK (top), runs down to movable,
+  // up to next fixed, down to next movable, etc.
+  // Last segment goes to effort.
+
+  // Anchor point: left edge of leftmost fixed pulley
+  const anchorX = fixedPulleys[0].x - rF;
+  rope(anchorX, 14, anchorX, movY - rM);
+
+  // Zig-zag between movable and fixed
+  for (let i = 0; i < numMovable; i++) {
+    const mp = movPulleys[i];
+    const fp = fixedPulleys[i];
+
+    // Down segment: from fixed[i] right to movable[i] right
+    // Actually we connect alternating sides of each pulley
+    if (i === 0) {
+      // already drew anchor above — connect to movable right side
+      rope(mp.x + rM, mp.y, fp.x + rF, fp.y);
+    } else {
+      // from previous movable right → this fixed left → this movable right
+      const prevMp = movPulleys[i - 1];
+      rope(prevMp.x + rM, prevMp.y, fp.x - rF, fp.y);
+      rope(fp.x + rF, fp.y, mp.x + rM, mp.y);
+    }
+  }
+
+  // Effort rope from last fixed pulley right side down
+  const lastFp = fixedPulleys[numMovable - 1];
+  if (numMovable > 1) {
+    const lastMp = movPulleys[numMovable - 1];
+    rope(lastMp.x + rM, lastMp.y, lastFp.x + rF, lastFp.y);
+  }
+  rope(lastFp.x + rF, lastFp.y, lastFp.x + rF, H - 90);
+  effortArrow(lastFp.x + rF, H - 90, false, `F = ${minEffort.toFixed(1)} N`);
+
+  // Load hangs from centre of movable block
+  const movCentreX = movPulleys.reduce((s, p) => s + p.x, 0) / numMovable;
+  // Connect bottom of all movable pulleys to a hook/bar
+  if (numMovable > 1) {
+    rope(movPulleys[0].x, movY + rM, movPulleys[numMovable - 1].x, movY + rM);
+  }
+  rope(movCentreX, movY + rM, movCentreX, loadY - 18);
+  loadBlock(movCentreX, loadY, `${document.getElementById("load-mass").value} kg`);
+
+  // Draw all pulleys on top of ropes
+  fixedPulleys.forEach(p => pulleyCircle(p.x, p.y, rF));
+  movPulleys.forEach(p   => pulleyCircle(p.x, p.y, rM));
+
+  // Tension labels
+  ctx.font = "10px system-ui"; ctx.fillStyle = "#9333ea"; ctx.textAlign = "center";
+  ctx.fillText(`T = ${tension.toFixed(1)} N per segment`, W / 2, movY + rM + 18);
+
+  ctx.font = "11px system-ui"; ctx.fillStyle = "#6b7280"; ctx.textAlign = "center";
+  ctx.fillText(`Compound block & tackle — MA = ${MA}`, W / 2, H - 10);
+}
+
+// ── Main draw dispatcher ───────────────────────────────────────────────
+function drawDiagram(type, cfg, W_force, tension, minEffort, effortN, loadMass) {
+  const CW = canvas.width, CH = canvas.height;
+  ctx.clearRect(0, 0, CW, CH);
+  ctx.fillStyle = "#fafafa";
+  ctx.fillRect(0, 0, CW, CH);
+
+  if (type === "fixed") {
+    drawFixed(CW, CH, tension, minEffort, effortN, loadMass);
+  } else if (type === "movable") {
+    drawMovable(CW, CH, tension, minEffort, effortN, loadMass);
+  } else if (type === "compound2") {
+    drawCompound(CW, CH, tension, minEffort, effortN, loadMass, 2);
+  } else if (type === "compound3") {
+    drawCompound(CW, CH, tension, minEffort, effortN, loadMass, 3);
+  }
 }
 
 document.getElementById("pulley-calc").addEventListener("click", calculate);
+document.getElementById("pulley-type").addEventListener("change", calculate);
 calculate();
 </script>
 </body>
