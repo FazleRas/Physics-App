@@ -6,6 +6,23 @@ const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c", "#0891b2"
 let trails = [];
 let weatherData = null;
 let weatherEnabled = true;
+let hoveredTrail = null;   // index of currently hovered trail, or null
+let mousePos = { x: 0, y: 0 };
+
+// ── Coordinate helpers (shared between draw and hit-test) ──────────────
+let _scaleState = null;  // updated each drawAll call
+
+function getScaleState() {
+  const W = canvas.width, H = canvas.height;
+  const padL = 50, padB = 36, padT = 24, padR = 20;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  if (trails.length === 0) return null;
+  const allX  = trails.flatMap(t => t.points.map(p => p.x));
+  const allY  = trails.flatMap(t => t.points.map(p => p.y));
+  const minX  = Math.min(...allX), maxX = Math.max(...allX), maxH = Math.max(...allY);
+  const spanX = (maxX - minX) || 1;
+  return { padL, padB, padT, padR, innerW, innerH, W, H, minX, spanX, maxH };
+}
 
 // ── UI wiring ──────────────────────────────────────────────────────────
 document.getElementById("btn-launch").addEventListener("click", launch);
@@ -14,6 +31,64 @@ document.getElementById("btn-retry").addEventListener("click", fetchWeather);
 document.getElementById("weather-toggle").addEventListener("change", e => {
   weatherEnabled = e.target.checked;
 });
+
+// ── Canvas hover ───────────────────────────────────────────────────────
+canvas.addEventListener("mousemove", e => {
+  const rect = canvas.getBoundingClientRect();
+  // Scale mouse coords to canvas resolution
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  mousePos.x = (e.clientX - rect.left)  * scaleX;
+  mousePos.y = (e.clientY - rect.top)   * scaleY;
+  updateHover();
+});
+
+canvas.addEventListener("mouseleave", () => {
+  if (hoveredTrail !== null) {
+    hoveredTrail = null;
+    drawAll();
+  }
+});
+
+function updateHover() {
+  const ss = getScaleState();
+  if (!ss) return;
+  const { padL, padB, padT, innerW, innerH, W, H, minX, spanX, maxH } = ss;
+
+  const toCanvasX = x => padL + ((x - minX) / spanX) * innerW;
+  const toCanvasY = y => (H - padB) - (y / (maxH || 1)) * innerH;
+
+  const HIT_RADIUS = 10; // px in canvas space
+  let found = null;
+
+  for (let ti = trails.length - 1; ti >= 0; ti--) {
+    const pts = trails[ti].points;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const ax = toCanvasX(pts[i].x),   ay = toCanvasY(pts[i].y);
+      const bx = toCanvasX(pts[i+1].x), by = toCanvasY(pts[i+1].y);
+      if (distToSegment(mousePos.x, mousePos.y, ax, ay, bx, by) < HIT_RADIUS) {
+        found = ti;
+        break;
+      }
+    }
+    if (found !== null) break;
+  }
+
+  if (found !== hoveredTrail) {
+    hoveredTrail = found;
+    canvas.style.cursor = found !== null ? "crosshair" : "default";
+    drawAll();
+  }
+}
+
+function distToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx*dx + dy*dy;
+  if (lenSq === 0) return Math.hypot(px - ax, py - ay);
+  let t = ((px - ax)*dx + (py - ay)*dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t*dx), py - (ay + t*dy));
+}
 
 // ── Unit helpers ───────────────────────────────────────────────────────
 function toMS(val, unit) {
@@ -315,20 +390,17 @@ function drawAll() {
   // Axis labels
   ctx.font = "10px system-ui, sans-serif";
   ctx.fillStyle = "#aaa";
-
   ctx.textAlign = "right";
   for (let i = 0; i <= rows; i++) {
     const val = maxH * (1 - i / rows);
     ctx.fillText(val.toFixed(0), padL - 5, padT + (i / rows) * innerH + 4);
   }
-
   ctx.textAlign = "center";
   for (let i = 0; i <= 4; i++) {
     const val = minX + spanX * (i / 4);
     ctx.fillText(val.toFixed(0), padL + (i / 4) * innerW, H - padB + 14);
   }
   ctx.fillText("m →", W - padR, H - padB + 14);
-
   ctx.textAlign = "left";
   ctx.fillText("↑ m", padL + 4, padT - 6);
 
@@ -341,17 +413,13 @@ function drawAll() {
       const ax = padL + innerW * 0.88;
       const ay = padT + 16;
       ctx.save();
-      ctx.strokeStyle = "#2563eb";
-      ctx.fillStyle   = "#2563eb";
-      ctx.globalAlpha = 0.5;
-      ctx.lineWidth   = 1.5;
+      ctx.strokeStyle = "#2563eb"; ctx.fillStyle = "#2563eb"; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax + arrowLen * dir, ay); ctx.stroke();
       ctx.beginPath();
       ctx.moveTo(ax + arrowLen * dir, ay);
       ctx.lineTo(ax + (arrowLen - 7) * dir, ay - 4);
       ctx.lineTo(ax + (arrowLen - 7) * dir, ay + 4);
-      ctx.closePath();
-      ctx.fill();
+      ctx.closePath(); ctx.fill();
       ctx.globalAlpha = 0.6;
       ctx.font = "9px system-ui, sans-serif";
       ctx.textAlign = dir > 0 ? "left" : "right";
@@ -360,26 +428,27 @@ function drawAll() {
     }
   }
 
-  // Draw trajectories
-  trails.forEach(trail => {
-    const pts = trail.points;
+  // Draw all trajectories — dimmed if something else is hovered
+  trails.forEach((trail, ti) => {
+    const pts   = trail.points;
+    const isHov = hoveredTrail === ti;
+    const isDim = hoveredTrail !== null && !isHov;
 
     ctx.beginPath();
     pts.forEach((p, i) => {
-      const dx = toCanvasX(p.x);
-      const dy = toCanvasY(p.y);
+      const dx = toCanvasX(p.x), dy = toCanvasY(p.y);
       i === 0 ? ctx.moveTo(dx, dy) : ctx.lineTo(dx, dy);
     });
-    ctx.strokeStyle = trail.color;
-    ctx.lineWidth   = 2;
+    ctx.strokeStyle = isDim ? trail.color + "40" : trail.color;
+    ctx.lineWidth   = isHov ? 3 : 2;
     ctx.lineJoin    = "round";
     ctx.stroke();
 
-    // Start and end dots
+    // Start / end dots
     [pts[0], pts[pts.length - 1]].forEach(p => {
       ctx.beginPath();
-      ctx.arc(toCanvasX(p.x), toCanvasY(p.y), 4, 0, Math.PI * 2);
-      ctx.fillStyle = trail.color;
+      ctx.arc(toCanvasX(p.x), toCanvasY(p.y), isHov ? 5 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = isDim ? trail.color + "40" : trail.color;
       ctx.fill();
     });
 
@@ -387,13 +456,87 @@ function drawAll() {
     const apexIdx = pts.reduce((best, p, i) => p.y > pts[best].y ? i : best, 0);
     const apex    = pts[apexIdx];
     ctx.beginPath();
-    ctx.arc(toCanvasX(apex.x), toCanvasY(apex.y), 4, 0, Math.PI * 2);
-    ctx.strokeStyle = trail.color;
+    ctx.arc(toCanvasX(apex.x), toCanvasY(apex.y), isHov ? 5 : 4, 0, Math.PI * 2);
+    ctx.strokeStyle = isDim ? trail.color + "40" : trail.color;
     ctx.lineWidth   = 1.5;
     ctx.fillStyle   = "#fafafa";
     ctx.fill();
     ctx.stroke();
+
+    // Label on hover
+    if (isHov) {
+      const labelX = toCanvasX(apex.x);
+      const labelY = toCanvasY(apex.y) - 14;
+      const f      = trail.unit === "fts" ? 3.28084 : 1;
+      const ul     = unitLabel(trail.unit);
+      const vl     = velLabel(trail.unit);
+      const lines  = [
+        `#${ti + 1}  ${trail.deg}°  ·  ${trail.rawV} ${vl}`,
+        `Range: ${(trail.range * f).toFixed(1)} ${ul}`,
+        `Max height: ${(trail.maxHeight * f).toFixed(1)} ${ul}`,
+        `Flight time: ${trail.timeOfFlight.toFixed(2)} s`,
+        `ρ: ${trail.airDensity.toFixed(3)} kg/m³${trail.hasWind ? "  ·  " + trail.windDesc : ""}`,
+      ];
+
+      const PAD = 10, LINE_H = 16;
+      const boxW = 220, boxH = PAD * 2 + lines.length * LINE_H;
+      let bx = labelX - boxW / 2;
+      let by = labelY - boxH - 6;
+      // clamp inside canvas
+      bx = Math.max(padL, Math.min(W - padR - boxW, bx));
+      by = Math.max(padT, by);
+
+      // Box
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.97)";
+      ctx.strokeStyle = trail.color;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = "rgba(0,0,0,0.12)";
+      ctx.shadowBlur  = 8;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, boxW, boxH, 5);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+
+      // Colour stripe on left edge
+      ctx.fillStyle = trail.color;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, 4, boxH, [5, 0, 0, 5]);
+      ctx.fill();
+
+      // Text
+      ctx.fillStyle = "#1c1a17";
+      ctx.font = "bold 11px system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(lines[0], bx + PAD + 4, by + PAD + 11);
+      ctx.font = "11px system-ui, sans-serif";
+      ctx.fillStyle = "#555";
+      lines.slice(1).forEach((line, li) => {
+        ctx.fillText(line, bx + PAD + 4, by + PAD + 11 + (li + 1) * LINE_H);
+      });
+      ctx.restore();
+
+      // Highlight row in table
+      highlightTableRow(ti);
+    }
   });
+
+  if (hoveredTrail === null) clearTableHighlight();
+}
+
+// ── Table highlight ────────────────────────────────────────────────────
+function highlightTableRow(index) {
+  const tbody = document.getElementById("stats-body");
+  [...tbody.rows].forEach((row, i) => {
+    row.style.background = i === index ? "#f0f4ff" : "";
+    row.style.outline    = i === index ? `2px solid ${trails[i]?.color || "transparent"}` : "";
+  });
+}
+
+function clearTableHighlight() {
+  const tbody = document.getElementById("stats-body");
+  [...tbody.rows].forEach(row => { row.style.background = ""; row.style.outline = ""; });
 }
 
 // ── Table ─────────────────────────────────────────────────────────────

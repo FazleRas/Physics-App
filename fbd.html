@@ -195,32 +195,57 @@ function calculate() {
   const thetaR = theta * Math.PI / 180;
   const phiR   = phi   * Math.PI / 180;
 
-  // Weight components (along and perpendicular to surface)
-  const W     = mass * g;
-  const Wx    = W * Math.sin(thetaR);  // down the slope
-  const Wy    = W * Math.cos(thetaR);  // into the slope
+  // Weight
+  const W  = mass * g;
 
-  // Applied force components
-  const Fax   = Fapp * Math.cos(phiR);
-  const Fay   = Fapp * Math.sin(phiR);
+  // Weight components in surface frame:
+  //   parallel to slope (positive = down the slope)
+  //   perpendicular to slope (positive = into surface)
+  const Wpar  = W * Math.sin(thetaR);
+  const Wperp = W * Math.cos(thetaR);
 
-  // Normal force (perpendicular to surface)
-  const N     = Math.max(0, Wy - Fay);
+  // Applied force components in surface frame:
+  //   phi is measured from the surface plane, positive = away from surface
+  const Fpar  = Fapp * Math.cos(phiR);   // along slope (positive = up the slope)
+  const Fperp = Fapp * Math.sin(phiR);   // perpendicular (positive = away from surface)
 
-  // Friction force (opposes motion along surface)
-  const Ff    = mu * N;
+  // Normal force: balances weight-into-surface minus any applied force lifting off surface
+  const N = Math.max(0, Wperp - Fperp);
 
-  // Net force along surface
-  const netParallel = Fax - Wx - Ff;
-  const netPerp     = N - Wy + Fay;
+  // Maximum static friction available
+  const FfMax = mu * N;
+
+  // Net driving force along the slope BEFORE friction:
+  //   positive = up the slope (applied), negative = down the slope (gravity component)
+  const drivingForce = Fpar - Wpar;
+
+  // Friction is STATIC if |driving| <= FfMax → it exactly cancels driving → object stays still.
+  // Friction is KINETIC (= FfMax) if |driving| > FfMax → object moves, net force is non-zero.
+  let Ff, netParallel, motionState;
+  if (Math.abs(drivingForce) <= FfMax) {
+    // Static: friction exactly balances the driving force, net = 0
+    Ff           = Math.abs(drivingForce);   // magnitude only (direction opposes driving)
+    netParallel  = 0;
+    motionState  = "Static equilibrium";
+  } else {
+    // Kinetic: friction is at its max, object accelerates
+    Ff          = FfMax;
+    netParallel = drivingForce - Math.sign(drivingForce) * FfMax;
+    motionState = netParallel > 0 ? "Accelerating up slope" : "Accelerating down slope";
+  }
+
+  const netPerp     = 0;   // normal force always exactly balances perpendicular components
   const acceleration = netParallel / mass;
+
+  // Direction label for friction arrow
+  const ffDir = drivingForce >= 0 ? "← down slope" : "→ up slope";
 
   // Force list
   const forces = [
-    { name: "Weight (W)",    mag: W.toFixed(2),   color: FORCE_COLORS.weight,   dir: "↓ into surface" },
-    { name: "Normal (N)",    mag: N.toFixed(2),   color: FORCE_COLORS.normal,   dir: "↑ perp. to surface" },
-    { name: "Friction (f)",  mag: Ff.toFixed(2),  color: FORCE_COLORS.friction, dir: "← opposing motion" },
-    { name: "Applied (F)",   mag: Fapp.toFixed(2),color: FORCE_COLORS.applied,  dir: `${phi}° from surface` },
+    { name: "Weight (W)",   mag: W.toFixed(2),    color: FORCE_COLORS.weight,   dir: "↓ vertically down" },
+    { name: "Normal (N)",   mag: N.toFixed(2),    color: FORCE_COLORS.normal,   dir: "↑ perp. to surface" },
+    { name: "Friction (f)", mag: Ff.toFixed(2),   color: FORCE_COLORS.friction, dir: ffDir },
+    { name: "Applied (F)",  mag: Fapp.toFixed(2), color: FORCE_COLORS.applied,  dir: `${phi >= 0 ? phi : 360+phi}° from surface` },
   ];
 
   const listEl = document.getElementById("force-list");
@@ -234,16 +259,16 @@ function calculate() {
 
   const cls = Math.abs(netParallel) < 0.01 ? "net-zero" : netParallel > 0 ? "net-positive" : "net-negative";
   document.getElementById("res-netx").innerHTML = `<span class="${cls}">${netParallel.toFixed(2)}</span><span class="result-unit"> N</span>`;
-  document.getElementById("res-nety").innerHTML = `${netPerp.toFixed(2)}<span class="result-unit"> N</span>`;
+  document.getElementById("res-nety").innerHTML = `0.00<span class="result-unit"> N</span>`;
   document.getElementById("res-acc").innerHTML  = `<span class="${cls}">${acceleration.toFixed(3)}</span><span class="result-unit"> m/s²</span>`;
-  document.getElementById("res-state").textContent =
-    Math.abs(acceleration) < 0.001 ? "Equilibrium" :
-    acceleration > 0 ? "Accelerating →" : "Decelerating ←";
+  document.getElementById("res-state").textContent = motionState;
 
-  drawDiagram(theta, thetaR, mass, W, N, Ff, Fapp, phiR, netParallel);
+  // Pass friction direction sign for drawing
+  const ffSign = drivingForce >= 0 ? -1 : 1;  // -1 = friction points down slope in canvas
+  drawDiagram(theta, thetaR, mass, W, N, Ff, ffSign, Fapp, phiR, netParallel);
 }
 
-function drawDiagram(theta, thetaR, mass, W, N, Ff, Fapp, phiR, net) {
+function drawDiagram(theta, thetaR, mass, W, N, Ff, ffSign, Fapp, phiR, net) {
   const W_ = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W_, H);
   ctx.fillStyle = "#fafafa";
@@ -286,31 +311,36 @@ function drawDiagram(theta, thetaR, mass, W, N, Ff, Fapp, phiR, net) {
   ctx.textAlign = "center";
   ctx.fillText(`${mass}kg`, 0, -blockSize/2 + 4);
 
-  const scale = Math.min(90, 800 / (W || 1));
+  const scale = 60 / (mass * g);  // fixed scale relative to weight
 
-  // Normal force (up from surface = -y in rotated frame)
-  const Nlen = Math.min(90, N * scale / (mass * g));
+  // Normal force (perpendicular up from surface)
+  const Nlen = Math.min(90, Math.max(20, N * scale));
   drawArrow(0, -blockSize, 0, -blockSize - Nlen, FORCE_COLORS.normal, `N=${N.toFixed(1)}N`, "right");
 
-  // Friction (along surface)
-  const Flen = Math.min(70, Ff * scale / (mass * g) + 10);
+  // Friction (along surface — ffSign: +1 = up slope (left in canvas), -1 = down slope (right))
   if (Ff > 0.01) {
-    drawArrow(0, -blockSize/2, -Flen, -blockSize/2, FORCE_COLORS.friction, `f=${Ff.toFixed(1)}N`, "left");
+    const Flen = Math.min(70, Math.max(15, Ff * scale));
+    // ffSign = +1 → friction is up the slope → negative x direction in rotated frame
+    drawArrow(0, -blockSize/2, ffSign * Flen, -blockSize/2, FORCE_COLORS.friction, `f=${Ff.toFixed(1)}N`, ffSign > 0 ? "left" : "right");
   }
 
   ctx.restore();
 
   // Weight — always straight down (world frame)
-  const Wlen = Math.min(90, 80);
-  drawArrow(cx, cy - blockSize * Math.cos(thetaR), cx, cy - blockSize * Math.cos(thetaR) + Wlen, FORCE_COLORS.weight, `W=${W.toFixed(1)}N`, "right");
+  const Wlen = Math.min(90, Math.max(30, W * scale));
+  const blockTopY = cy - blockSize * Math.cos(thetaR);
+  drawArrow(cx, blockTopY, cx, blockTopY + Wlen, FORCE_COLORS.weight, `W=${W.toFixed(1)}N`, "right");
 
-  // Applied force (from center of block)
+  // Applied force
   if (Fapp > 0.01) {
     const bx = cx + (blockSize/2) * Math.sin(thetaR);
     const by = cy - (blockSize/2) * Math.cos(thetaR) - blockSize/2;
-    const Flen2 = Math.min(80, 50 + Fapp * 0.5);
-    const dirX  = Math.cos(phiR - thetaR + Math.PI);
-    const dirY  = -Math.sin(phiR - thetaR + Math.PI);
+    const Flen2 = Math.min(80, Math.max(20, Fapp * scale));
+    // Applied force angle is measured from the surface (uphill direction), phiR above it
+    // In world frame: uphill = thetaR from horizontal, so force dir = thetaR + phiR from horizontal
+    const worldAngle = thetaR + phiR;
+    const dirX =  Math.cos(worldAngle);
+    const dirY = -Math.sin(worldAngle);  // canvas y is inverted
     drawArrow(bx, by, bx + dirX * Flen2, by + dirY * Flen2, FORCE_COLORS.applied, `F=${Fapp.toFixed(1)}N`, "right");
   }
 
@@ -318,7 +348,12 @@ function drawDiagram(theta, thetaR, mass, W, N, Ff, Fapp, phiR, net) {
   ctx.font = "11px system-ui";
   ctx.fillStyle = Math.abs(net) < 0.01 ? "#6b7280" : net > 0 ? "#16a34a" : "#dc2626";
   ctx.textAlign = "center";
-  ctx.fillText(`Net parallel: ${net.toFixed(2)} N`, W_/2, H - 12);
+  ctx.fillText(
+    Math.abs(net) < 0.01
+      ? "Net force along slope: 0.00 N (static equilibrium)"
+      : `Net force along slope: ${net.toFixed(2)} N`,
+    W_/2, H - 12
+  );
 }
 
 document.getElementById("fbd-calc").addEventListener("click", calculate);
