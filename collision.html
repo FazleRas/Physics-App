@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Collision Simulator — Physics Simulation Hub</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f3;--surface:#fff;--border:#e5e3de;
+  --text:#1c1a17;--muted:#8a8680;
+  --accent:#0d9488;--radius:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.06);
+}
+body{font-family:system-ui,sans-serif;font-size:14px;background:var(--bg);color:var(--text);line-height:1.5}
+.page{max-width:1020px;margin:0 auto;padding:36px 24px}
+.back-link{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:20px;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+header{margin-bottom:24px}
+h1{font-size:1.35rem;font-weight:700;letter-spacing:-.02em}
+.subtitle{font-size:13px;color:var(--muted);margin-top:2px}
+main{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 22px}
+.card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.card-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.card-title-row .card-title{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.fields{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:500;color:var(--muted)}
+.input-row{display:flex}
+.input-row input{border-radius:var(--radius) 0 0 var(--radius);border-right:none}
+input[type=number]{font-size:13px;padding:7px 9px;border:1px solid #d1d1d6;background:var(--surface);color:var(--text);outline:none;border-radius:var(--radius);width:84px;transition:border-color .12s,box-shadow .12s}
+input[type=number]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(13,148,136,.12)}
+input[type=range]{width:140px;accent-color:var(--accent)}
+.unit-badge{display:flex;align-items:center;padding:7px 9px;border:1px solid #d1d1d6;border-left:none;border-radius:0 var(--radius) var(--radius) 0;background:var(--bg);color:var(--muted);font-size:11px;white-space:nowrap}
+button{font-family:inherit;font-size:13px;font-weight:500;padding:7px 16px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent;transition:all .12s;white-space:nowrap}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-p:hover{background:#0f766e}
+.btn-s{background:var(--surface);color:var(--muted);border-color:#d1d1d6}
+.btn-s:hover{background:var(--bg);color:var(--text)}
+button:active{transform:scale(.98)}
+canvas{display:block;width:100%;height:auto;border:1px solid var(--border);border-radius:4px;background:#fafafa}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.obj-group{display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border)}
+.obj-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}
+.ri{background:var(--bg);border-radius:var(--radius);padding:11px 14px}
+.rl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:3px}
+.rv{font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.ru{font-size:11px;color:var(--muted);margin-left:2px}
+.conserved{color:#16a34a}.lost-val{color:#dc2626}
+.dim-row{display:flex;gap:8px;margin-bottom:16px}
+.dbtn{font-size:11px;padding:4px 12px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .12s}
+.dbtn:hover,.dbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ebadge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:3px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;margin-left:8px}
+.ebadge.inel{background:#fef9c3;color:#854d0e;border-color:#fde047}
+.ebadge.perf{background:#fef2f2;color:#991b1b;border-color:#fca5a5}
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="back-link">← Hub</a>
+  <header>
+    <h1>Collision Simulator</h1>
+    <p class="subtitle">Elastic · Inelastic · Perfectly Inelastic — 1D and 2D</p>
+  </header>
+  <main>
+    <section class="card">
+      <div class="card-title">Collision Parameters</div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:6px">Dimensions</div>
+        <div class="dim-row">
+          <button class="dbtn active" id="dim1d">1D (head-on)</button>
+          <button class="dbtn" id="dim2d">2D (angled)</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:8px">
+          Coefficient of Restitution (e)<span id="ebadge" class="ebadge">Elastic</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <input type="range" id="coeff-e" min="0" max="1" step="0.01" value="1">
+          <span id="coeff-val" style="font-size:13px;font-weight:600;min-width:32px;font-variant-numeric:tabular-nums">1.00</span>
+          <span style="font-size:12px;color:var(--muted)">0 = perfectly inelastic &nbsp;·&nbsp; 1 = perfectly elastic</span>
+        </div>
+      </div>
+
+      <div class="fields">
+        <div class="obj-group">
+          <div class="obj-label" style="color:#2563eb">● Object A (blue)</div>
+          <div class="field"><label>Mass A</label>
+            <div class="input-row"><input type="number" id="mA" value="2" min="0.01" step="0.5"><span class="unit-badge">kg</span></div></div>
+          <div class="field"><label>Speed A</label>
+            <div class="input-row"><input type="number" id="vA" value="4" step="0.5"><span class="unit-badge">m/s</span></div></div>
+          <div class="field" id="angA-wrap" style="display:none"><label>Direction A (from +x)</label>
+            <div class="input-row"><input type="number" id="angA" value="0" step="5"><span class="unit-badge">deg</span></div></div>
+        </div>
+
+        <div class="obj-group">
+          <div class="obj-label" style="color:#dc2626">● Object B (red)</div>
+          <div class="field"><label>Mass B</label>
+            <div class="input-row"><input type="number" id="mB" value="3" min="0.01" step="0.5"><span class="unit-badge">kg</span></div></div>
+          <div class="field"><label>Speed B</label>
+            <div class="input-row"><input type="number" id="vB" value="1" step="0.5"><span class="unit-badge">m/s</span></div></div>
+          <div class="field" id="angB-wrap" style="display:none"><label>Direction B (from +x)</label>
+            <div class="input-row"><input type="number" id="angB" value="180" step="5"><span class="unit-badge">deg</span></div></div>
+        </div>
+
+        <div class="field" style="align-self:flex-end;flex-direction:row;gap:8px">
+          <button class="btn-p" id="btn-sim">Simulate</button>
+          <button class="btn-s" id="btn-reset">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Animation -->
+    <section class="card">
+      <div class="card-title-row">
+        <div class="card-title">Animation</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-s" id="btn-play" style="font-size:12px;padding:4px 12px">▶ Play</button>
+          <button class="btn-s" id="btn-step" style="font-size:12px;padding:4px 12px">Step →</button>
+        </div>
+      </div>
+      <canvas id="col-canvas" width="920" height="240"></canvas>
+    </section>
+
+    <!-- Results -->
+    <section class="card">
+      <div class="card-title">Results</div>
+      <div class="two-col" style="gap:16px;margin-bottom:12px">
+        <div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Before</div>
+          <div class="results-grid">
+            <div class="ri"><div class="rl">vA before</div><div class="rv" id="r-vA-pre">—</div></div>
+            <div class="ri"><div class="rl">vB before</div><div class="rv" id="r-vB-pre">—</div></div>
+            <div class="ri"><div class="rl">Total momentum</div><div class="rv" id="r-p-pre">—</div></div>
+            <div class="ri"><div class="rl">Total KE</div><div class="rv" id="r-ke-pre">—</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">After</div>
+          <div class="results-grid">
+            <div class="ri"><div class="rl">vA after</div><div class="rv" id="r-vA-post">—</div></div>
+            <div class="ri"><div class="rl">vB after</div><div class="rv" id="r-vB-post">—</div></div>
+            <div class="ri"><div class="rl">Total momentum</div><div class="rv" id="r-p-post">—</div></div>
+            <div class="ri"><div class="rl">Total KE</div><div class="rv" id="r-ke-post">—</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="results-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="ri"><div class="rl">Momentum conserved?</div><div class="rv conserved" id="r-p-ok">—</div></div>
+        <div class="ri"><div class="rl">KE lost</div><div class="rv" id="r-ke-lost">—</div></div>
+        <div class="ri"><div class="rl">Type</div><div class="rv" id="r-type">—</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const canvas = document.getElementById("col-canvas");
+const ctx    = canvas.getContext("2d");
+
+let mode = "1d";
+let simResult = null;
+let simState  = null;
+let animating = false, rafId = null;
+
+// ── Mode toggle ───────────────────────────────────────────────────────
+document.getElementById("dim1d").addEventListener("click", () => setMode("1d"));
+document.getElementById("dim2d").addEventListener("click", () => setMode("2d"));
+function setMode(m) {
+  mode = m;
+  document.getElementById("dim1d").classList.toggle("active", m==="1d");
+  document.getElementById("dim2d").classList.toggle("active", m==="2d");
+  document.getElementById("angA-wrap").style.display = m==="2d" ? "" : "none";
+  document.getElementById("angB-wrap").style.display = m==="2d" ? "" : "none";
+}
+
+// ── Coefficient slider ────────────────────────────────────────────────
+document.getElementById("coeff-e").addEventListener("input", function() {
+  const e = parseFloat(this.value);
+  document.getElementById("coeff-val").textContent = e.toFixed(2);
+  const badge = document.getElementById("ebadge");
+  if (e >= 1)      { badge.textContent="Elastic";             badge.className="ebadge"; }
+  else if (e <= 0) { badge.textContent="Perfectly Inelastic"; badge.className="ebadge perf"; }
+  else             { badge.textContent="Inelastic";            badge.className="ebadge inel"; }
+});
+
+// ── Physics ───────────────────────────────────────────────────────────
+// General 1D collision with coefficient of restitution e:
+//   vA = (mA*uA + mB*uB - mB*e*(uA-uB)) / (mA+mB)
+//   vB = (mA*uA + mB*uB + mA*e*(uA-uB)) / (mA+mB)
+// In 2D: decompose into normal (collision axis) and tangential.
+// For a head-on collision the normal axis is x; tangential velocities unchanged.
+
+function solve1D(mA, mB, uA, uB, e) {
+  const vA = (mA*uA + mB*uB - mB*e*(uA-uB)) / (mA+mB);
+  const vB = (mA*uA + mB*uB + mA*e*(uA-uB)) / (mA+mB);
+  return { vA, vB };
+}
+
+function solve2D(mA, mB, uAx, uAy, uBx, uBy, e) {
+  // Normal = x direction (balls collide along x)
+  const { vA: vAx, vB: vBx } = solve1D(mA, mB, uAx, uBx, e);
+  return { vAx, vAy: uAy, vBx, vBy: uBy };
+}
+
+function runPhysics() {
+  const mA = parseFloat(document.getElementById("mA").value) || 1;
+  const mB = parseFloat(document.getElementById("mB").value) || 1;
+  const e  = parseFloat(document.getElementById("coeff-e").value);
+  let r;
+
+  if (mode === "1d") {
+    // In 1D: positive velocity = moving right. A moves right, B moves left (toward each other) by default.
+    const uA = parseFloat(document.getElementById("vA").value) || 0;
+    const uB = -(parseFloat(document.getElementById("vB").value) || 0); // B's input is speed, travels left
+    const { vA, vB } = solve1D(mA, mB, uA, uB, e);
+    const pPre  = mA*uA + mB*uB;
+    const pPost = mA*vA + mB*vB;
+    const kePre  = 0.5*mA*uA*uA + 0.5*mB*uB*uB;
+    const kePost = 0.5*mA*vA*vA + 0.5*mB*vB*vB;
+    r = { dim:"1d", mA, mB, uA, uB, vA, vB, pPre, pPost, kePre, kePost, e };
+  } else {
+    const spA   = parseFloat(document.getElementById("vA").value) || 0;
+    const spB   = parseFloat(document.getElementById("vB").value) || 0;
+    const dA    = parseFloat(document.getElementById("angA").value) * Math.PI/180;
+    const dB    = parseFloat(document.getElementById("angB").value) * Math.PI/180;
+    const uAx = spA*Math.cos(dA), uAy = spA*Math.sin(dA);
+    const uBx = spB*Math.cos(dB), uBy = spB*Math.sin(dB);
+    const { vAx, vAy, vBx, vBy } = solve2D(mA, mB, uAx, uAy, uBx, uBy, e);
+    const kePre  = 0.5*mA*(uAx*uAx+uAy*uAy) + 0.5*mB*(uBx*uBx+uBy*uBy);
+    const kePost = 0.5*mA*(vAx*vAx+vAy*vAy) + 0.5*mB*(vBx*vBx+vBy*vBy);
+    const pPre  = Math.hypot(mA*uAx+mB*uBx, mA*uAy+mB*uBy);
+    const pPost = Math.hypot(mA*vAx+mB*vBx, mA*vAy+mB*vBy);
+    r = { dim:"2d", mA, mB, uAx, uAy, uBx, uBy, vAx, vAy, vBx, vBy, pPre, pPost, kePre, kePost, e };
+  }
+  return r;
+}
+
+function showResults(r) {
+  const fmt = v => v.toFixed(3);
+  if (r.dim === "1d") {
+    document.getElementById("r-vA-pre").innerHTML  = fmt(r.uA)+'<span class="ru"> m/s</span>';
+    document.getElementById("r-vB-pre").innerHTML  = fmt(r.uB)+'<span class="ru"> m/s</span>';
+    document.getElementById("r-vA-post").innerHTML = fmt(r.vA)+'<span class="ru"> m/s</span>';
+    document.getElementById("r-vB-post").innerHTML = fmt(r.vB)+'<span class="ru"> m/s</span>';
+  } else {
+    document.getElementById("r-vA-pre").innerHTML  = Math.hypot(r.uAx,r.uAy).toFixed(3)+'<span class="ru"> m/s</span>';
+    document.getElementById("r-vB-pre").innerHTML  = Math.hypot(r.uBx,r.uBy).toFixed(3)+'<span class="ru"> m/s</span>';
+    document.getElementById("r-vA-post").innerHTML = Math.hypot(r.vAx,r.vAy).toFixed(3)+'<span class="ru"> m/s</span>';
+    document.getElementById("r-vB-post").innerHTML = Math.hypot(r.vBx,r.vBy).toFixed(3)+'<span class="ru"> m/s</span>';
+  }
+  document.getElementById("r-p-pre").innerHTML  = fmt(r.pPre)+'<span class="ru"> kg·m/s</span>';
+  document.getElementById("r-p-post").innerHTML = fmt(r.pPost)+'<span class="ru"> kg·m/s</span>';
+  document.getElementById("r-ke-pre").innerHTML  = r.kePre.toFixed(4)+'<span class="ru"> J</span>';
+  document.getElementById("r-ke-post").innerHTML = r.kePost.toFixed(4)+'<span class="ru"> J</span>';
+  document.getElementById("r-p-ok").textContent = Math.abs(r.pPre-r.pPost)<0.005 ? "✓ Yes" : "✗ No";
+  const lost = r.kePre - r.kePost;
+  const lostEl = document.getElementById("r-ke-lost");
+  lostEl.innerHTML = Math.abs(lost).toFixed(4)+'<span class="ru"> J</span>';
+  lostEl.className = "rv " + (Math.abs(lost)<0.001?"conserved":"lost-val");
+  document.getElementById("r-type").textContent =
+    r.e >= 1 ? "Elastic" : r.e <= 0 ? "Perfectly Inelastic" : "Inelastic";
+}
+
+// ── Animation ─────────────────────────────────────────────────────────
+const PRE_F = 80, COL_F = 14, POST_F = 100;
+
+function buildState(r) {
+  const W = canvas.width, H = canvas.height;
+  const maxM = Math.max(r.mA, r.mB);
+  const rA = 22 + (r.mA/maxM)*22, rB = 22 + (r.mB/maxM)*22;
+  return { r, rA, rB, phase:"pre", frame:0 };
+}
+
+function advance(s, n=1) {
+  for (let i=0;i<n;i++) {
+    s.frame++;
+    const lim = s.phase==="pre"?PRE_F:s.phase==="collide"?COL_F:POST_F;
+    if (s.frame>=lim) {
+      if (s.phase==="pre") { s.phase="collide"; s.frame=0; }
+      else if (s.phase==="collide") { s.phase="post"; s.frame=0; }
+    }
+  }
+}
+
+function getPos(s) {
+  const { r, rA, rB } = s;
+  const W = canvas.width, H = canvas.height;
+  const CX = W/2, CY = H/2;
+
+  if (s.phase === "pre") {
+    const t = s.frame / PRE_F;
+    return {
+      ax: CX - rA - 130 + 130*t, ay: CY,
+      bx: CX + rB + 130 - 130*t, by: CY,
+      flash: 0
+    };
+  }
+  if (s.phase === "collide") {
+    const fl = Math.sin(s.frame/COL_F * Math.PI);
+    return { ax: CX-rA, ay: CY, bx: CX+rB, by: CY, flash: fl };
+  }
+  // post
+  const t = s.frame / POST_F;
+  const DIST = 140;
+  let dvAx, dvAy, dvBx, dvBy;
+  if (r.dim === "1d") {
+    const spd = Math.max(Math.abs(r.uA), Math.abs(r.uB), 0.5);
+    dvAx = (r.vA/spd) * DIST; dvAy = 0;
+    dvBx = (r.vB/spd) * DIST; dvBy = 0;
+  } else {
+    const spd = Math.max(Math.hypot(r.uAx,r.uAy), Math.hypot(r.uBx,r.uBy), 0.5);
+    dvAx = (r.vAx/spd)*DIST; dvAy = -(r.vAy/spd)*DIST;
+    dvBx = (r.vBx/spd)*DIST; dvBy = -(r.vBy/spd)*DIST;
+  }
+  return {
+    ax: CX-rA+dvAx*t, ay: CY+dvAy*t,
+    bx: CX+rB+dvBx*t, by: CY+dvBy*t,
+    flash: 0
+  };
+}
+
+function paint() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle="#fafafa"; ctx.fillRect(0,0,W,H);
+
+  if (!simState) {
+    ctx.font="13px system-ui"; ctx.fillStyle="#aaa"; ctx.textAlign="center";
+    ctx.fillText("Set parameters and click Simulate", W/2, H/2);
+    ctx.textAlign="left"; return;
+  }
+
+  const s = simState, { r, rA, rB } = s;
+  const W2=W/2, H2=H/2;
+
+  // Centre dashed line
+  ctx.strokeStyle="#eaeaea"; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(W2,16); ctx.lineTo(W2,H-16); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font="9px system-ui"; ctx.fillStyle="#ccc"; ctx.textAlign="center";
+  ctx.fillText("collision",W2,14);
+
+  const pos = getPos(s);
+
+  // Flash
+  if (pos.flash > 0.05) {
+    const g = ctx.createRadialGradient(W2,H2,0,W2,H2,80);
+    g.addColorStop(0,`rgba(253,224,71,${pos.flash*0.8})`);
+    g.addColorStop(1,"rgba(253,224,71,0)");
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(W2,H2,100,0,Math.PI*2); ctx.fill();
+  }
+
+  // Velocity arrows
+  function velArrow(x,y,vx,vy,col) {
+    const sp = Math.hypot(vx,vy);
+    if (sp<0.01) return;
+    const scale = Math.min(80, sp*14) / sp;
+    const ex=x+vx*scale, ey=y+vy*scale;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(ex,ey);
+    ctx.strokeStyle=col+"bb"; ctx.lineWidth=2.5; ctx.stroke();
+    const ux=vx/sp, uy=vy/sp, h=10;
+    ctx.beginPath();
+    ctx.moveTo(ex,ey);
+    ctx.lineTo(ex-h*(ux*0.866-uy*0.5), ey-h*(uy*0.866+ux*0.5));
+    ctx.lineTo(ex-h*(ux*0.866+uy*0.5), ey-h*(uy*0.866-ux*0.5));
+    ctx.closePath(); ctx.fillStyle=col+"bb"; ctx.fill();
+    ctx.font="10px system-ui"; ctx.fillStyle=col;
+    ctx.textAlign="center";
+    ctx.fillText(sp.toFixed(1)+" m/s", ex+uy*18, ey-ux*18);
+  }
+
+  if (s.phase==="pre"||s.phase==="collide") {
+    if (r.dim==="1d") {
+      velArrow(pos.ax,pos.ay, r.uA, 0, "#2563eb");
+      velArrow(pos.bx,pos.by, r.uB, 0, "#dc2626");
+    } else {
+      velArrow(pos.ax,pos.ay, r.uAx, -r.uAy, "#2563eb");
+      velArrow(pos.bx,pos.by, r.uBx, -r.uBy, "#dc2626");
+    }
+  } else {
+    if (r.dim==="1d") {
+      velArrow(pos.ax,pos.ay, r.vA, 0, "#2563eb");
+      velArrow(pos.bx,pos.by, r.vB, 0, "#dc2626");
+    } else {
+      velArrow(pos.ax,pos.ay, r.vAx, -r.vAy, "#2563eb");
+      velArrow(pos.bx,pos.by, r.vBx, -r.vBy, "#dc2626");
+    }
+  }
+
+  // Balls
+  function ball(cx,cy,r,stroke,fill,label) {
+    ctx.beginPath(); ctx.ellipse(cx,cy+r+3,r*0.6,4,0,0,Math.PI*2);
+    ctx.fillStyle="rgba(0,0,0,0.06)"; ctx.fill();
+    const gr=ctx.createRadialGradient(cx-r*.3,cy-r*.3,r*.1,cx,cy,r);
+    gr.addColorStop(0,"#fff"); gr.addColorStop(.4,fill); gr.addColorStop(1,stroke);
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.fillStyle=gr; ctx.fill();
+    ctx.strokeStyle=stroke; ctx.lineWidth=2; ctx.stroke();
+    ctx.font=`bold ${Math.max(9,Math.round(r*.38))}px system-ui`;
+    ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(label,cx,cy); ctx.textBaseline="alphabetic";
+  }
+
+  ball(pos.ax,pos.ay,rA,"#1d4ed8","#bfdbfe",`${r.mA}kg`);
+  ball(pos.bx,pos.by,rB,"#b91c1c","#fecaca",`${r.mB}kg`);
+
+  // Phase label
+  const pl = s.phase==="pre"?"Approaching…":s.phase==="collide"?"💥 Collision!":"Separating…";
+  ctx.font="11px system-ui"; ctx.textAlign="left";
+  ctx.fillStyle = s.phase==="collide"?"#d97706":"#aaa";
+  ctx.fillText(pl, 10, H-8);
+}
+
+function loop() {
+  if (!animating||!simState) return;
+  advance(simState);
+  paint();
+  const done = simState.phase==="post" && simState.frame>=POST_F-1;
+  if (done) { animating=false; document.getElementById("btn-play").textContent="▶ Replay"; return; }
+  rafId=requestAnimationFrame(loop);
+}
+
+function startAnim() {
+  if (animating) { cancelAnimationFrame(rafId); animating=false; }
+  animating=true;
+  document.getElementById("btn-play").textContent="⏸ Pause";
+  rafId=requestAnimationFrame(loop);
+}
+
+document.getElementById("btn-sim").addEventListener("click",()=>{
+  cancelAnimationFrame(rafId); animating=false;
+  simResult = runPhysics();
+  showResults(simResult);
+  simState = buildState(simResult);
+  paint(); startAnim();
+  document.getElementById("btn-play").textContent="⏸ Pause";
+});
+
+document.getElementById("btn-play").addEventListener("click",()=>{
+  if (!simState) return;
+  if (animating) { cancelAnimationFrame(rafId); animating=false; document.getElementById("btn-play").textContent="▶ Resume"; }
+  else {
+    if (simState.phase==="post"&&simState.frame>=POST_F-1) simState=buildState(simResult);
+    startAnim();
+  }
+});
+
+document.getElementById("btn-step").addEventListener("click",()=>{
+  if (!simState) return;
+  cancelAnimationFrame(rafId); animating=false;
+  document.getElementById("btn-play").textContent="▶ Resume";
+  advance(simState,4); paint();
+});
+
+document.getElementById("btn-reset").addEventListener("click",()=>{
+  cancelAnimationFrame(rafId); animating=false;
+  simState=null; simResult=null; paint();
+  document.getElementById("btn-play").textContent="▶ Play";
+  ["r-vA-pre","r-vB-pre","r-vA-post","r-vB-post","r-p-pre","r-p-post",
+   "r-ke-pre","r-ke-post","r-ke-lost","r-type","r-p-ok"].forEach(id=>{
+    document.getElementById(id).innerHTML="—";
+  });
+});
+
+paint();
+</script>
+</body>
+</html>
