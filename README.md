@@ -10,80 +10,73 @@ The goal of the project is to bridge the gap between textbook physics and real-w
 
 ## Features
 
-### Projectile Motion (2D)
+**Projectile Motion (2D)**
+- Solves full trajectory with adjustable initial velocity and angle
+- Includes air resistance
+- Integrates weather data (wind, atmospheric conditions)
+- Outputs key metrics such as range, max height, and time of flight
 
-* Solves full trajectory with adjustable initial velocity and angle
-* Includes air resistance
-* Integrates weather data (wind, atmospheric conditions)
-* Outputs key metrics such as range, max height, and time of flight
+**Free Body Diagrams (FBD)**
+- Interactive force decomposition
+- Supports multiple forces acting on a system
+- Visual representation of net force and components
 
-### Free Body Diagrams (FBD)
+**Pulley Systems**
+- Models tension and acceleration in connected systems
+- Supports multi-mass setups
+- Solves using Newton’s Second Law
 
-* Interactive force decomposition
-* Supports multiple forces acting on a system
-* Visual representation of net force and components
+**Springs and Harmonic Motion**
+- Simple harmonic motion (SHM) calculations
+- Spring force using Hooke’s Law
+- Period, frequency, and displacement analysis
 
-### Pulley Systems
-
-* Models tension and acceleration in connected systems
-* Supports multi-mass setups
-* Solves using Newton’s Second Law
-
-### Springs and Harmonic Motion
-
-* Simple harmonic motion (SHM) calculations
-* Spring force using Hooke’s Law
-* Period, frequency, and displacement analysis
+**2D Grapher**
+- Graph almost any physics function or system in 2D
+- Fully interactive with customizable axes and variables
+- Complements calculations with visual representation
 
 ## Design Philosophy
 
 Most physics calculators stop at plugging values into equations. This project focuses on:
-
-* Realism: Incorporating drag and environmental effects
-* Interactivity: Letting users explore systems dynamically
-* Modularity: Each physics topic is separated but extensible
-* Clarity: Making outputs easy to interpret and visualize
+- **Realism:** Incorporating drag and environmental effects
+- **Interactivity:** Letting users explore systems dynamically
+- **Modularity:** Each physics topic is separate but extensible
+- **Clarity:** Making outputs easy to interpret and visualize
 
 ## Tech Stack
 
-* Frontend: JavaScript, HTML, CSS
-* APIs: Weather integration for environmental inputs
-* Math Engine: Custom physics calculations and formulas
+- **Frontend:** JavaScript, HTML, CSS
+- **APIs:** Weather integration for environmental inputs
+- **Math Engine:** Custom physics calculations and formulas
 
 ## Future Improvements
 
-Planned features to expand the project further:
-
-* 3D projectile motion with full vector-based physics
-* Graphing (position, velocity, acceleration, energy vs time)
-* Numerical solvers for non-analytical systems
-* Collision simulations (elastic and inelastic)
-* Rotational motion and torque systems
+- 3D projectile motion with full vector-based physics
+- Graphing enhancements (position, velocity, acceleration, energy vs time)
+- Numerical solvers for non-analytical systems
+- Collision simulations (elastic and inelastic)
+- Rotational motion and torque systems
 
 ## Getting Started
 
-1. Clone the repository
-   git clone https://github.com/yourusername/physics-calculator.git
+You can use the application directly via GitHub Pages—no cloning required. Just visit:  
+[Your GitHub Pages Link]
 
-2. Open the project folder
-
-3. Run the application locally (depending on setup)
-
-   * Open index.html
-     or
-   * Use a local development server
+If you prefer to run it locally:
+1. Download the project folder
+2. Open `index.html` or serve it using a local development server
 
 ## Use Cases
 
-* Students learning physics concepts
-* Quick problem solving and verification
-* Visualizing how forces and motion behave in real scenarios
-* Demonstrating physics concepts interactively
+- Students learning physics concepts
+- Quick problem solving and verification
+- Visualizing how forces and motion behave in real scenarios
+- Demonstrating physics concepts interactively
 
 ## Author
 
-Built by Fazal
-Focused on combining physics, programming, and real-world simulation
+Built by Fazal, focused on combining physics, programming, and real-world simulation
 
 ## License
 
