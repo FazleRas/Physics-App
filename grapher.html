@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Physics Grapher — Physics Simulation Hub</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f3;--surface:#fff;--border:#e5e3de;
+  --text:#1c1a17;--muted:#8a8680;
+  --accent:#6366f1;--radius:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.06);
+}
+body{font-family:system-ui,sans-serif;font-size:14px;background:var(--bg);color:var(--text);line-height:1.5}
+.page{max-width:1080px;margin:0 auto;padding:36px 24px}
+.back-link{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:20px;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+header{margin-bottom:24px}
+h1{font-size:1.35rem;font-weight:700;letter-spacing:-.02em}
+.subtitle{font-size:13px;color:var(--muted);margin-top:2px}
+main{display:flex;flex-direction:column;gap:12px}
+
+/* Sim selector */
+.sim-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:0}
+.sim-tab{font-size:12px;font-weight:500;padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .15s;margin-bottom:-2px;white-space:nowrap}
+.sim-tab:hover{color:var(--text)}
+.sim-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 22px}
+.card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.fields{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:500;color:var(--muted)}
+.input-row{display:flex}
+.input-row input,.input-row select{border-radius:0}
+.input-row input:first-child,.input-row select:first-child{border-radius:var(--radius) 0 0 var(--radius);border-right:none}
+.input-row>*:last-child{border-radius:0 var(--radius) var(--radius) 0}
+input[type=number],select{font-family:inherit;font-size:13px;padding:6px 9px;border:1px solid #d1d1d6;background:var(--surface);color:var(--text);outline:none;border-radius:var(--radius);transition:border-color .12s,box-shadow .12s}
+input[type=number]{width:84px}
+input[type=number]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.unit-badge{display:flex;align-items:center;padding:6px 9px;border:1px solid #d1d1d6;border-left:none;border-radius:0 var(--radius) var(--radius) 0;background:var(--bg);color:var(--muted);font-size:11px;white-space:nowrap}
+select.fw{min-width:170px}
+button{font-family:inherit;font-size:13px;font-weight:500;padding:6px 14px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent;transition:all .12s;white-space:nowrap}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-p:hover{background:#4f46e5}
+.btn-s{background:var(--surface);color:var(--muted);border-color:#d1d1d6}
+.btn-s:hover{background:var(--bg);color:var(--text)}
+.btn-sm{font-size:11px;padding:4px 10px}
+button:active{transform:scale(.98)}
+
+/* Graph selector */
+.graph-selector{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+.graph-chip{font-size:11px;font-weight:500;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--muted);cursor:pointer;background:var(--bg);transition:all .15s;user-select:none}
+.graph-chip:hover{border-color:var(--accent);color:var(--accent)}
+.graph-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Graph canvas area */
+.graph-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.graph-grid.single{grid-template-columns:1fr}
+.graph-wrap{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow)}
+.graph-wrap canvas{display:block;width:100%;height:auto}
+.graph-label{position:absolute;top:12px;left:14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.graph-close{position:absolute;top:8px;right:8px;font-size:11px;padding:2px 7px;border-radius:3px;background:var(--bg);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .12s}
+.graph-close:hover{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
+
+/* Series legend */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* Info panel */
+.info-bar{background:#eef2ff;border:1px solid #c7d2fe;border-radius:var(--radius);padding:10px 14px;font-size:12px;color:#3730a3;margin-top:10px}
+
+/* Hover crosshair display */
+.crosshair-val{position:absolute;pointer-events:none;font-size:10px;font-family:monospace;background:rgba(255,255,255,.92);border:1px solid var(--border);border-radius:3px;padding:3px 7px;display:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="back-link">← Hub</a>
+  <header>
+    <h1>Physics Grapher</h1>
+    <p class="subtitle">Graph any physical quantity vs time — across multiple simulations</p>
+  </header>
+  <main>
+
+    <!-- ── Simulation picker + params ── -->
+    <section class="card">
+      <div class="card-title">Simulation &amp; Parameters</div>
+
+      <div class="sim-tabs">
+        <button class="sim-tab active" data-sim="projectile">🎯 Projectile</button>
+        <button class="sim-tab" data-sim="spring">🌀 Spring</button>
+        <button class="sim-tab" data-sim="rolling">🔄 Rolling</button>
+        <button class="sim-tab" data-sim="freefall">🪂 Free Fall</button>
+        <button class="sim-tab" data-sim="pendulum">⏱ Pendulum</button>
+        <button class="sim-tab" data-sim="circular">⭕ Circular Motion</button>
+      </div>
+
+      <!-- Projectile params -->
+      <div id="params-projectile" class="params-panel" style="margin-top:14px">
+        <div class="fields">
+          <div class="field"><label>Speed (m/s)</label><input type="number" id="p-speed" value="30" min="1"></div>
+          <div class="field"><label>Angle (°)</label><input type="number" id="p-angle" value="45" min="1" max="89"></div>
+          <div class="field"><label>Drag Cd</label><input type="number" id="p-cd" value="0" min="0" max="2" step="0.01"></div>
+          <div class="field"><label>Mass (kg)</label><input type="number" id="p-mass" value="1" min="0.01" step="0.1"></div>
+          <div class="field"><label>Area (m²)</label><input type="number" id="p-area" value="0.01" min="0" step="0.001"></div>
+          <div class="field"><label>Air density</label><input type="number" id="p-rho" value="1.225" min="0" step="0.001"></div>
+          <div class="field"><label>Gravity</label>
+            <select id="p-g"><option value="9.81">Earth 9.81</option><option value="1.62">Moon 1.62</option><option value="3.72">Mars 3.72</option><option value="24.79">Jupiter 24.79</option></select></div>
+        </div>
+      </div>
+
+      <!-- Spring params -->
+      <div id="params-spring" class="params-panel" style="display:none;margin-top:14px">
+        <div class="fields">
+          <div class="field"><label>Spring const k (N/m)</label><input type="number" id="s-k" value="10" min="0.1" step="0.5"></div>
+          <div class="field"><label>Mass (kg)</label><input type="number" id="s-m" value="1" min="0.01" step="0.1"></div>
+          <div class="field"><label>Amplitude (m)</label><input type="number" id="s-A" value="0.5" min="0.01" step="0.05"></div>
+          <div class="field"><label>Damping b (N·s/m)</label><input type="number" id="s-b" value="0.2" min="0" step="0.05"></div>
+          <div class="field"><label>Duration (s)</label><input type="number" id="s-dur" value="20" min="1" step="1"></div>
+        </div>
+      </div>
+
+      <!-- Rolling params -->
+      <div id="params-rolling" class="params-panel" style="display:none;margin-top:14px">
+        <div class="fields">
+          <div class="field"><label>Shape</label>
+            <select id="r-shape" class="fw">
+              <option value="0.4">Solid sphere β=2/5</option>
+              <option value="0.667">Hollow sphere β=2/3</option>
+              <option value="0.5">Solid cylinder β=1/2</option>
+              <option value="1">Hollow cylinder β=1</option>
+            </select></div>
+          <div class="field"><label>Mass (kg)</label><input type="number" id="r-mass" value="1" min="0.01" step="0.1"></div>
+          <div class="field"><label>Radius (m)</label><input type="number" id="r-rad" value="0.1" min="0.005" step="0.01"></div>
+          <div class="field"><label>Angle (°)</label><input type="number" id="r-angle" value="30" min="1" max="89"></div>
+          <div class="field"><label>Length (m)</label><input type="number" id="r-len" value="5" min="0.5" step="0.5"></div>
+          <div class="field"><label>Gravity</label>
+            <select id="r-g"><option value="9.81">Earth</option><option value="1.62">Moon</option><option value="3.72">Mars</option></select></div>
+        </div>
+      </div>
+
+      <!-- Free fall params -->
+      <div id="params-freefall" class="params-panel" style="display:none;margin-top:14px">
+        <div class="fields">
+          <div class="field"><label>Initial height (m)</label><input type="number" id="f-h" value="50" min="1" step="5"></div>
+          <div class="field"><label>Initial velocity (m/s)</label><input type="number" id="f-v0" value="0" step="1"></div>
+          <div class="field"><label>Mass (kg)</label><input type="number" id="f-m" value="1" min="0.01" step="0.1"></div>
+          <div class="field"><label>Drag Cd</label><input type="number" id="f-cd" value="0" min="0" step="0.01"></div>
+          <div class="field"><label>Area (m²)</label><input type="number" id="f-area" value="0.5" min="0" step="0.01"></div>
+          <div class="field"><label>Air density</label><input type="number" id="f-rho" value="1.225" min="0" step="0.001"></div>
+          <div class="field"><label>Gravity</label>
+            <select id="f-g"><option value="9.81">Earth</option><option value="1.62">Moon</option><option value="3.72">Mars</option></select></div>
+        </div>
+      </div>
+
+      <!-- Pendulum params -->
+      <div id="params-pendulum" class="params-panel" style="display:none;margin-top:14px">
+        <div class="fields">
+          <div class="field"><label>Length (m)</label><input type="number" id="pn-L" value="1" min="0.1" step="0.1"></div>
+          <div class="field"><label>Initial angle (°)</label><input type="number" id="pn-th" value="30" min="1" max="170" step="1"></div>
+          <div class="field"><label>Mass (kg)</label><input type="number" id="pn-m" value="0.5" min="0.01" step="0.1"></div>
+          <div class="field"><label>Damping b</label><input type="number" id="pn-b" value="0" min="0" step="0.01"></div>
+          <div class="field"><label>Duration (s)</label><input type="number" id="pn-dur" value="15" min="1" step="1"></div>
+          <div class="field"><label>Gravity</label>
+            <select id="pn-g"><option value="9.81">Earth</option><option value="1.62">Moon</option><option value="3.72">Mars</option></select></div>
+        </div>
+      </div>
+
+      <!-- Circular motion params -->
+      <div id="params-circular" class="params-panel" style="display:none;margin-top:14px">
+        <div class="fields">
+          <div class="field"><label>Radius (m)</label><input type="number" id="c-r" value="2" min="0.1" step="0.1"></div>
+          <div class="field"><label>Initial ω (rad/s)</label><input type="number" id="c-w" value="2" step="0.1"></div>
+          <div class="field"><label>Angular accel α (rad/s²)</label><input type="number" id="c-alpha" value="0" step="0.1"></div>
+          <div class="field"><label>Mass (kg)</label><input type="number" id="c-m" value="1" min="0.01" step="0.1"></div>
+          <div class="field"><label>Duration (s)</label><input type="number" id="c-dur" value="10" min="1" step="1"></div>
+        </div>
+      </div>
+
+      <!-- Graph type chips -->
+      <div style="margin-top:14px">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Graphs to show</div>
+        <div class="graph-selector" id="graph-chips"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
+        <button class="btn-p" id="btn-run">▶ Add Series</button>
+        <button class="btn-s" id="btn-clear-series">Clear All</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px">Each click adds a new series so you can compare different parameters</span>
+      </div>
+    </section>
+
+    <!-- ── Graphs ── -->
+    <section class="card" id="graphs-card">
+      <div class="card-title" style="margin-bottom:12px">Graphs</div>
+      <div class="graph-grid" id="graph-grid">
+        <div style="color:var(--muted);font-size:13px;font-style:italic;text-align:center;padding:40px;grid-column:1/-1">
+          Select graph types above and click Add Series to begin plotting.
+        </div>
+      </div>
+      <div class="legend" id="global-legend"></div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// Graph colours & series tracking
+// ══════════════════════════════════════════════════════════════════════
+const COLORS = [
+  "#6366f1","#dc2626","#16a34a","#ea580c","#0891b2",
+  "#9333ea","#d97706","#0d9488","#be185d","#1d4ed8"
+];
+let allSeries  = [];  // [{sim, label, color, data:{t,x,y,vx,vy,v,ax,ay,a,ke,pe,e,p,omega,alpha,...}}]
+let activeGraphs = new Set(); // which graph types are shown
+let seriesCounter = 0;
+
+// ══════════════════════════════════════════════════════════════════════
+// Sim-tab switching
+// ══════════════════════════════════════════════════════════════════════
+const SIM_GRAPH_OPTIONS = {
+  projectile: ["x vs t","y vs t","vx vs t","vy vs t","speed vs t","ax vs t","ay vs t","KE vs t","PE vs t","E total vs t","momentum vs t","trajectory (x vs y)"],
+  spring:     ["x vs t","v vs t","a vs t","KE vs t","PE vs t","E total vs t","F spring vs t","phase (v vs x)"],
+  rolling:    ["x vs t","v vs t","ω vs t","a vs t","α vs t","KE_trans vs t","KE_rot vs t","E total vs t"],
+  freefall:   ["y vs t","v vs t","a vs t","KE vs t","PE vs t","E total vs t","momentum vs t"],
+  pendulum:   ["θ vs t","ω vs t","α vs t","x vs t","y vs t","KE vs t","PE vs t","E total vs t","phase (ω vs θ)"],
+  circular:   ["θ vs t","ω vs t","α vs t","v vs t","ac vs t","KE vs t","arc length vs t"],
+};
+
+let currentSim = "projectile";
+
+document.querySelectorAll(".sim-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".sim-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentSim = btn.dataset.sim;
+    document.querySelectorAll(".params-panel").forEach(p => p.style.display = "none");
+    document.getElementById("params-" + currentSim).style.display = "";
+    activeGraphs = new Set();
+    buildChips();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// Graph chip builder
+// ══════════════════════════════════════════════════════════════════════
+function buildChips() {
+  const container = document.getElementById("graph-chips");
+  container.innerHTML = "";
+  const opts = SIM_GRAPH_OPTIONS[currentSim] || [];
+  opts.forEach(opt => {
+    const chip = document.createElement("div");
+    chip.className = "graph-chip" + (activeGraphs.has(opt) ? " active" : "");
+    chip.textContent = opt;
+    chip.addEventListener("click", () => {
+      if (activeGraphs.has(opt)) activeGraphs.delete(opt);
+      else activeGraphs.add(opt);
+      chip.classList.toggle("active");
+      redrawAllGraphs();
+    });
+    container.appendChild(chip);
+  });
+}
+
+buildChips();
+
+// ══════════════════════════════════════════════════════════════════════
+// Simulations
+// ══════════════════════════════════════════════════════════════════════
+
+function simProjectile() {
+  const speed = +document.getElementById("p-speed").value || 30;
+  const angle = +document.getElementById("p-angle").value || 45;
+  const Cd    = +document.getElementById("p-cd").value   || 0;
+  const mass  = +document.getElementById("p-mass").value || 1;
+  const area  = +document.getElementById("p-area").value || 0.01;
+  const rho   = +document.getElementById("p-rho").value  || 1.225;
+  const g     = +document.getElementById("p-g").value    || 9.81;
+  const rad   = angle * Math.PI / 180;
+  let vx = speed*Math.cos(rad), vy = speed*Math.sin(rad);
+  let x = 0, y = 0;
+  const k = 0.5*Cd*area*rho/mass;
+  const dt = 0.02;
+  const d = {t:[],x:[],y:[],vx:[],vy:[],v:[],ax:[],ay:[],a:[],ke:[],pe:[],e:[],p:[]};
+  while (true) {
+    const spd = Math.hypot(vx,vy);
+    const drag = k*spd*spd;
+    const _ax = -drag*(vx/(spd||1));
+    const _ay = -drag*(vy/(spd||1)) - g;
+    const t_ = (d.t.length)*dt;
+    d.t.push(t_); d.x.push(x); d.y.push(Math.max(0,y));
+    d.vx.push(vx); d.vy.push(vy); d.v.push(spd);
+    d.ax.push(_ax); d.ay.push(_ay); d.a.push(Math.hypot(_ax,_ay));
+    const ke = 0.5*mass*spd*spd;
+    const pe = mass*g*Math.max(0,y);
+    d.ke.push(ke); d.pe.push(pe); d.e.push(ke+pe);
+    d.p.push(mass*spd);
+    vx += _ax*dt; vy += _ay*dt;
+    x += vx*dt; y += vy*dt;
+    if (d.t.length > 1 && y < 0) break;
+    if (d.t.length > 15000) break;
+  }
+  return { d, label: `Proj ${speed}m/s ${angle}°` };
+}
+
+function simSpring() {
+  const k   = +document.getElementById("s-k").value   || 10;
+  const m   = +document.getElementById("s-m").value   || 1;
+  const A   = +document.getElementById("s-A").value   || 0.5;
+  const b   = +document.getElementById("s-b").value   || 0;
+  const dur = +document.getElementById("s-dur").value || 20;
+  const omega0 = Math.sqrt(k/m);
+  const zeta   = b/(2*Math.sqrt(k*m));
+  const omegaD = omega0*Math.sqrt(Math.max(0,1-zeta*zeta));
+  const dt = 0.02;
+  const d = {t:[],x:[],v:[],a:[],ke:[],pe:[],e:[],f:[]};
+  let t = 0;
+  while (t <= dur) {
+    const x = A*Math.exp(-zeta*omega0*t)*Math.cos(omegaD*t||0);
+    const v = A*Math.exp(-zeta*omega0*t)*(-zeta*omega0*Math.cos(omegaD*t||0) - omegaD*Math.sin(omegaD*t||0));
+    const f = -k*x;
+    const acc = f/m - b*v/m;
+    const ke = 0.5*m*v*v;
+    const pe = 0.5*k*x*x;
+    d.t.push(t); d.x.push(x); d.v.push(v); d.a.push(acc);
+    d.ke.push(ke); d.pe.push(pe); d.e.push(ke+pe); d.f.push(f);
+    t += dt;
+  }
+  return { d, label: `Spring k=${k} A=${A} b=${b}` };
+}
+
+function simRolling() {
+  const beta  = +document.getElementById("r-shape").value || 0.4;
+  const m     = +document.getElementById("r-mass").value  || 1;
+  const r     = +document.getElementById("r-rad").value   || 0.1;
+  const theta = +document.getElementById("r-angle").value || 30;
+  const L     = +document.getElementById("r-len").value   || 5;
+  const g     = +document.getElementById("r-g").value     || 9.81;
+  const thetaR = theta*Math.PI/180;
+  const a  = g*Math.sin(thetaR)/(1+beta);
+  const alpha_ = a/r;
+  const tTotal = Math.sqrt(2*L/a);
+  const I   = beta*m*r*r;
+  const dt  = 0.02;
+  const d   = {t:[],x:[],v:[],omega:[],a:[],alpha:[],ke_t:[],ke_r:[],e:[]};
+  let t = 0;
+  while (t <= tTotal) {
+    const x = 0.5*a*t*t;
+    const v = a*t;
+    const w = v/r;
+    const ke_t = 0.5*m*v*v;
+    const ke_r = 0.5*I*w*w;
+    d.t.push(t); d.x.push(x); d.v.push(v); d.omega.push(w);
+    d.a.push(a); d.alpha.push(alpha_);
+    d.ke_t.push(ke_t); d.ke_r.push(ke_r); d.e.push(ke_t+ke_r);
+    t += dt;
+  }
+  return { d, label: `Roll β=${beta} ${theta}°` };
+}
+
+function simFreefall() {
+  const h0  = +document.getElementById("f-h").value    || 50;
+  const v0  = +document.getElementById("f-v0").value   || 0;
+  const m   = +document.getElementById("f-m").value    || 1;
+  const Cd  = +document.getElementById("f-cd").value   || 0;
+  const area= +document.getElementById("f-area").value || 0.5;
+  const rho = +document.getElementById("f-rho").value  || 1.225;
+  const g   = +document.getElementById("f-g").value    || 9.81;
+  const k   = 0.5*Cd*area*rho/m;
+  const dt  = 0.02;
+  const d   = {t:[],y:[],v:[],a:[],ke:[],pe:[],e:[],p:[]};
+  let y = h0, v = v0, t = 0;
+  while (y >= 0) {
+    const drag = k*v*v*(v > 0 ? -1 : 1);
+    const acc  = -g + drag;
+    d.t.push(t); d.y.push(y); d.v.push(v); d.a.push(acc);
+    const ke = 0.5*m*v*v;
+    const pe = m*g*y;
+    d.ke.push(ke); d.pe.push(pe); d.e.push(ke+pe); d.p.push(m*Math.abs(v));
+    v += acc*dt; y += v*dt; t += dt;
+    if (d.t.length > 20000) break;
+  }
+  return { d, label: `Fall h=${h0}m Cd=${Cd}` };
+}
+
+function simPendulum() {
+  const L   = +document.getElementById("pn-L").value   || 1;
+  const th0 = +document.getElementById("pn-th").value  || 30;
+  const m   = +document.getElementById("pn-m").value   || 0.5;
+  const b   = +document.getElementById("pn-b").value   || 0;
+  const dur = +document.getElementById("pn-dur").value || 15;
+  const g   = +document.getElementById("pn-g").value   || 9.81;
+  const dt  = 0.005;
+  let theta = th0*Math.PI/180, omega = 0;
+  const d   = {t:[],theta:[],omega:[],alpha:[],x:[],y:[],ke:[],pe:[],e:[]};
+  let t = 0;
+  while (t <= dur) {
+    const alpha_ = -g/L*Math.sin(theta) - b/m*omega;
+    d.t.push(t); d.theta.push(theta); d.omega.push(omega); d.alpha.push(alpha_);
+    d.x.push(L*Math.sin(theta)); d.y.push(-L*Math.cos(theta));
+    const ke = 0.5*m*L*L*omega*omega;
+    const pe = m*g*L*(1-Math.cos(theta));
+    d.ke.push(ke); d.pe.push(pe); d.e.push(ke+pe);
+    omega += alpha_*dt; theta += omega*dt; t += dt;
+  }
+  return { d, label: `Pendulum L=${L} θ=${th0}°` };
+}
+
+function simCircular() {
+  const R     = +document.getElementById("c-r").value     || 2;
+  const w0    = +document.getElementById("c-w").value     || 2;
+  const alpha = +document.getElementById("c-alpha").value || 0;
+  const m     = +document.getElementById("c-m").value     || 1;
+  const dur   = +document.getElementById("c-dur").value   || 10;
+  const dt    = 0.02;
+  const d     = {t:[],theta:[],omega:[],alpha:[],v:[],ac:[],ke:[],arc:[]};
+  let t = 0, theta = 0;
+  while (t <= dur) {
+    const omega_ = w0 + alpha*t;
+    const v      = R*omega_;
+    const ac     = omega_*omega_*R;
+    const ke     = 0.5*m*v*v;
+    d.t.push(t); d.theta.push(theta); d.omega.push(omega_);
+    d.alpha.push(alpha); d.v.push(v); d.ac.push(ac);
+    d.ke.push(ke); d.arc.push(R*theta);
+    theta += omega_*dt; t += dt;
+  }
+  return { d, label: `Circ R=${R} ω₀=${w0}` };
+}
+
+function runSim() {
+  const fns = {
+    projectile: simProjectile,
+    spring:     simSpring,
+    rolling:    simRolling,
+    freefall:   simFreefall,
+    pendulum:   simPendulum,
+    circular:   simCircular,
+  };
+  return fns[currentSim]();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Graph data extraction
+// ══════════════════════════════════════════════════════════════════════
+function extractSeries(graphType, simType, data) {
+  const d = data;
+  const map = {
+    // Projectile
+    "x vs t":          { x: d.t, y: d.x,  xLabel:"t (s)", yLabel:"x (m)" },
+    "y vs t":          { x: d.t, y: d.y,  xLabel:"t (s)", yLabel:"y (m)" },
+    "vx vs t":         { x: d.t, y: d.vx, xLabel:"t (s)", yLabel:"vx (m/s)" },
+    "vy vs t":         { x: d.t, y: d.vy, xLabel:"t (s)", yLabel:"vy (m/s)" },
+    "speed vs t":      { x: d.t, y: d.v,  xLabel:"t (s)", yLabel:"speed (m/s)" },
+    "ax vs t":         { x: d.t, y: d.ax, xLabel:"t (s)", yLabel:"ax (m/s²)" },
+    "ay vs t":         { x: d.t, y: d.ay, xLabel:"t (s)", yLabel:"ay (m/s²)" },
+    "KE vs t":         { x: d.t, y: d.ke, xLabel:"t (s)", yLabel:"KE (J)" },
+    "PE vs t":         { x: d.t, y: d.pe, xLabel:"t (s)", yLabel:"PE (J)" },
+    "E total vs t":    { x: d.t, y: d.e,  xLabel:"t (s)", yLabel:"E (J)" },
+    "momentum vs t":   { x: d.t, y: d.p,  xLabel:"t (s)", yLabel:"p (kg·m/s)" },
+    "trajectory (x vs y)": { x: d.x, y: d.y, xLabel:"x (m)", yLabel:"y (m)" },
+    // Spring
+    "v vs t":          { x: d.t, y: d.v,  xLabel:"t (s)", yLabel:"v (m/s)" },
+    "a vs t":          { x: d.t, y: d.a,  xLabel:"t (s)", yLabel:"a (m/s²)" },
+    "F spring vs t":   { x: d.t, y: d.f,  xLabel:"t (s)", yLabel:"F (N)" },
+    "phase (v vs x)":  { x: d.x, y: d.v,  xLabel:"x (m)", yLabel:"v (m/s)" },
+    // Rolling
+    "ω vs t":          { x: d.t, y: d.omega,  xLabel:"t (s)", yLabel:"ω (rad/s)" },
+    "α vs t":          { x: d.t, y: d.alpha,  xLabel:"t (s)", yLabel:"α (rad/s²)" },
+    "KE_trans vs t":   { x: d.t, y: d.ke_t,   xLabel:"t (s)", yLabel:"KE_trans (J)" },
+    "KE_rot vs t":     { x: d.t, y: d.ke_r,   xLabel:"t (s)", yLabel:"KE_rot (J)" },
+    // Pendulum
+    "θ vs t":          { x: d.t, y: d.theta && d.theta.map(v=>v*180/Math.PI), xLabel:"t (s)", yLabel:"θ (°)" },
+    "phase (ω vs θ)":  { x: d.theta && d.theta.map(v=>v*180/Math.PI), y: d.omega, xLabel:"θ (°)", yLabel:"ω (rad/s)" },
+    // Circular
+    "ac vs t":         { x: d.t, y: d.ac,  xLabel:"t (s)", yLabel:"ac (m/s²)" },
+    "arc length vs t": { x: d.t, y: d.arc, xLabel:"t (s)", yLabel:"arc (m)" },
+  };
+  return map[graphType] || null;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Graph rendering
+// ══════════════════════════════════════════════════════════════════════
+const CANVAS_W = 460, CANVAS_H = 260;
+const PAD = { l:52, r:18, t:28, b:38 };
+
+function drawGraph(canvas, graphType, series) {
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const iW = W - PAD.l - PAD.r, iH = H - PAD.t - PAD.b;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle="#fafafa"; ctx.fillRect(0,0,W,H);
+
+  // Collect all x,y values
+  let allX = [], allY = [];
+  series.forEach(({xs,ys}) => { allX.push(...xs); allY.push(...ys); });
+  if (allX.length === 0) return;
+
+  let minX = Math.min(...allX), maxX = Math.max(...allX);
+  let minY = Math.min(...allY), maxY = Math.max(...allY);
+  if (minX === maxX) { minX -= 1; maxX += 1; }
+  if (minY === maxY) { minY -= 1; maxY += 1; }
+  const padY = (maxY - minY) * 0.07;
+  minY -= padY; maxY += padY;
+
+  const toSX = v => PAD.l + (v - minX) / (maxX - minX) * iW;
+  const toSY = v => PAD.t + iH - (v - minY) / (maxY - minY) * iH;
+
+  // Grid
+  ctx.strokeStyle="#ebebeb"; ctx.lineWidth=1;
+  const nY = 5, nX = 6;
+  for (let i=0;i<=nY;i++) {
+    const y = PAD.t + (i/nY)*iH;
+    ctx.beginPath(); ctx.moveTo(PAD.l,y); ctx.lineTo(W-PAD.r,y); ctx.stroke();
+  }
+  for (let i=0;i<=nX;i++) {
+    const x = PAD.l + (i/nX)*iW;
+    ctx.beginPath(); ctx.moveTo(x,PAD.t); ctx.lineTo(x,H-PAD.b); ctx.stroke();
+  }
+
+  // Zero lines
+  if (minY <= 0 && maxY >= 0) {
+    ctx.strokeStyle="#c8c8c8"; ctx.lineWidth=1;
+    const zy = toSY(0);
+    ctx.beginPath(); ctx.moveTo(PAD.l,zy); ctx.lineTo(W-PAD.r,zy); ctx.stroke();
+  }
+  if (minX <= 0 && maxX >= 0) {
+    ctx.strokeStyle="#c8c8c8"; ctx.lineWidth=1;
+    const zx = toSX(0);
+    ctx.beginPath(); ctx.moveTo(zx,PAD.t); ctx.lineTo(zx,H-PAD.b); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle="#bbb"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(PAD.l,PAD.t); ctx.lineTo(PAD.l,H-PAD.b); ctx.lineTo(W-PAD.r,H-PAD.b); ctx.stroke();
+
+  // Axis labels (numbers)
+  ctx.font="9px system-ui"; ctx.fillStyle="#aaa";
+  for (let i=0;i<=nY;i++) {
+    const val = minY + (1 - i/nY)*(maxY-minY);
+    const y   = PAD.t + (i/nY)*iH;
+    ctx.textAlign="right";
+    ctx.fillText(fmtNum(val), PAD.l-4, y+3);
+  }
+  for (let i=0;i<=nX;i+=2) {
+    const val = minX + (i/nX)*(maxX-minX);
+    const x   = PAD.l + (i/nX)*iW;
+    ctx.textAlign="center";
+    ctx.fillText(fmtNum(val), x, H-PAD.b+12);
+  }
+
+  // Axis title
+  const firstSeries = series[0];
+  if (firstSeries) {
+    ctx.font="10px system-ui"; ctx.fillStyle="#888"; ctx.textAlign="center";
+    ctx.fillText(firstSeries.xLabel, PAD.l + iW/2, H-2);
+    ctx.save(); ctx.translate(11, PAD.t+iH/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText(firstSeries.yLabel, 0, 0); ctx.restore();
+  }
+
+  // Lines
+  series.forEach(({xs, ys, color}) => {
+    if (!xs || xs.length < 2) return;
+    ctx.beginPath();
+    xs.forEach((xv,i) => {
+      const sx = toSX(xv), sy = toSY(ys[i]);
+      i===0 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+    });
+    ctx.strokeStyle = color; ctx.lineWidth=2; ctx.lineJoin="round"; ctx.stroke();
+
+    // Start dot
+    if (xs.length > 0) {
+      ctx.beginPath(); ctx.arc(toSX(xs[0]), toSY(ys[0]), 3, 0, Math.PI*2);
+      ctx.fillStyle=color; ctx.fill();
+    }
+  });
+
+  // Graph title
+  ctx.font="bold 10px system-ui"; ctx.fillStyle="#555"; ctx.textAlign="center";
+  ctx.fillText(graphType, PAD.l+iW/2, PAD.t-8);
+
+  // Store scale info on canvas for hover
+  canvas._graphMeta = { minX, maxX, minY, maxY, toSX, toSY, iW, iH };
+}
+
+function fmtNum(v) {
+  if (Math.abs(v) >= 1000) return v.toFixed(0);
+  if (Math.abs(v) >= 100)  return v.toFixed(1);
+  if (Math.abs(v) >= 10)   return v.toFixed(2);
+  return v.toFixed(3);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Graph management (add, remove, redraw)
+// ══════════════════════════════════════════════════════════════════════
+// graphState[graphType] = { canvas, series: [{xs,ys,color,label,xLabel,yLabel}] }
+const graphState = {};
+
+function ensureGraphCanvas(graphType) {
+  if (graphState[graphType]) return graphState[graphType];
+
+  const wrap = document.createElement("div");
+  wrap.className = "graph-wrap";
+  wrap.dataset.graphType = graphType;
+
+  const label = document.createElement("div");
+  label.className = "graph-label";
+  label.textContent = graphType;
+  wrap.appendChild(label);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "graph-close";
+  closeBtn.textContent = "✕";
+  closeBtn.addEventListener("click", () => {
+    delete graphState[graphType];
+    activeGraphs.delete(graphType);
+    document.querySelectorAll(".graph-chip").forEach(c => {
+      if (c.textContent === graphType) c.classList.remove("active");
+    });
+    wrap.remove();
+    updateGridLayout();
+    updateLegend();
+  });
+  wrap.appendChild(closeBtn);
+
+  const canvas = document.createElement("canvas");
+  canvas.width  = CANVAS_W;
+  canvas.height = CANVAS_H;
+  wrap.appendChild(canvas);
+
+  // Crosshair
+  const cv = document.createElement("div");
+  cv.className = "crosshair-val";
+  wrap.appendChild(cv);
+  canvas.addEventListener("mousemove", e => {
+    const meta = canvas._graphMeta;
+    if (!meta) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top)  * scaleY;
+    const iW = meta.iW, iH = meta.iH;
+    if (mx < PAD.l || mx > PAD.l+iW || my < PAD.t || my > PAD.t+iH) { cv.style.display="none"; return; }
+    const xVal = meta.minX + (mx - PAD.l) / iW * (meta.maxX - meta.minX);
+    const yVal = meta.minY + (1 - (my - PAD.t) / iH) * (meta.maxY - meta.minY);
+    cv.style.display = "block";
+    cv.style.left = (mx / scaleX + 10) + "px";
+    cv.style.top  = (my / scaleY - 20) + "px";
+    cv.textContent = `x=${fmtNum(xVal)}  y=${fmtNum(yVal)}`;
+  });
+  canvas.addEventListener("mouseleave", () => cv.style.display="none");
+
+  graphState[graphType] = { wrap, canvas, series: [] };
+  const grid = document.getElementById("graph-grid");
+  // Remove placeholder
+  const placeholder = grid.querySelector("[style*='italic']");
+  if (placeholder) placeholder.remove();
+  grid.appendChild(wrap);
+  updateGridLayout();
+  return graphState[graphType];
+}
+
+function updateGridLayout() {
+  const grid = document.getElementById("graph-grid");
+  const count = Object.keys(graphState).length;
+  if (count === 0) {
+    grid.innerHTML = `<div style="color:var(--muted);font-size:13px;font-style:italic;text-align:center;padding:40px;grid-column:1/-1">Select graph types above and click Add Series to begin plotting.</div>`;
+    grid.className = "graph-grid";
+  } else if (count === 1) {
+    grid.className = "graph-grid single";
+  } else {
+    grid.className = "graph-grid";
+  }
+}
+
+function redrawAllGraphs() {
+  // Add any newly activated graph types (with existing series)
+  activeGraphs.forEach(gt => ensureGraphCanvas(gt));
+  // Redraw each graph with current series
+  Object.entries(graphState).forEach(([gt, state]) => {
+    drawGraph(state.canvas, gt, state.series);
+  });
+  updateLegend();
+}
+
+function updateLegend() {
+  const legend = document.getElementById("global-legend");
+  legend.innerHTML = "";
+  allSeries.forEach(s => {
+    const item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = `<div class="legend-dot" style="background:${s.color}"></div><span>${s.label}</span>`;
+    legend.appendChild(item);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Add Series button
+// ══════════════════════════════════════════════════════════════════════
+document.getElementById("btn-run").addEventListener("click", () => {
+  if (activeGraphs.size === 0) {
+    alert("Please select at least one graph type first.");
+    return;
+  }
+  const { d, label } = runSim();
+  const color = COLORS[seriesCounter % COLORS.length];
+  seriesCounter++;
+
+  const seriesObj = { sim: currentSim, label, color, data: d };
+  allSeries.push(seriesObj);
+
+  // Add to each active graph
+  activeGraphs.forEach(gt => {
+    const extracted = extractSeries(gt, currentSim, d);
+    if (!extracted) return;
+    const state = ensureGraphCanvas(gt);
+    state.series.push({
+      xs: extracted.x,
+      ys: extracted.y,
+      xLabel: extracted.xLabel,
+      yLabel: extracted.yLabel,
+      color,
+      label,
+    });
+    drawGraph(state.canvas, gt, state.series);
+  });
+
+  updateLegend();
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// Clear all
+// ══════════════════════════════════════════════════════════════════════
+document.getElementById("btn-clear-series").addEventListener("click", () => {
+  allSeries = [];
+  seriesCounter = 0;
+  Object.keys(graphState).forEach(gt => delete graphState[gt]);
+  const grid = document.getElementById("graph-grid");
+  grid.innerHTML = `<div style="color:var(--muted);font-size:13px;font-style:italic;text-align:center;padding:40px;grid-column:1/-1">Select graph types above and click Add Series to begin plotting.</div>`;
+  grid.className = "graph-grid";
+  document.getElementById("global-legend").innerHTML = "";
+  activeGraphs.forEach(gt => {
+    document.querySelectorAll(".graph-chip").forEach(c => {
+      if (c.textContent === gt) c.classList.remove("active");
+    });
+  });
+  activeGraphs.clear();
+  buildChips();
+});
+</script>
+</body>
+</html>
