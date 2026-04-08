@@ -12,8 +12,8 @@ The goal of the project is to bridge the gap between textbook physics and real-w
 
 **Projectile Motion (2D)**
 - Solves full trajectory with adjustable initial velocity and angle
-- Includes air resistance
-- Integrates weather data (wind, atmospheric conditions)
+- Includes adjustable air resistance with cross-sectional area
+- Integrates live local weather data (wind, atmospheric conditions)
 - Outputs key metrics such as range, max height, and time of flight
 
 **Free Body Diagrams (FBD)**
